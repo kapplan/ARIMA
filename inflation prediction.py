@@ -1,24 +1,31 @@
 #!/usr/bin/env python
 # coding: utf-8
-# Team name: Tiger
 # Team members: Başak Kaplan
 
-# Model used: ARIMA and Random Forest Regessor. Random Forest Regressor have been chosen as the final model due to lower MSE and MAE.
-# Preperation: I have eliminated unneccessary columns and just left the date and the inflation rate values. I have worked with these variables throughout the whole project. I split my dataset into training and test sets. The training set is used to train themodels, and the test set is used to evaluate its performance.
-# Training: The Random Forest Regressor is trained on the training data, where it builds multiple decision trees. Each decision tree is trained on a random subset of the features and data samples from the training set. This randomness helps to introduce diversity among the trees.
-# Prediction: Once the model is trained, I created a new variable for May 2023 and pass it as input to the trained Random Forest Regressor model. The model then predicts the inflation rate for May based on the learned patterns and relationships from the training data.
-# Evaluation: After obtaining the predictions, I compared them with the actual values to assess the performance of the Random Forest Regressor model. Mean Squared Error (MSE) and Mean Absolute Error (MAE) has been calculated to measure the accuracy of the predictions. Then, I decided to drop the ARIMA model.
+# Models used: ARIMA and SARIMA, prophet.
 
-import warnings
-
-import matplotlib.pyplot as plt
-import numpy as np
 # Importing the necessary libraries
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
+import numpy as np
+
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import matplotlib.dates as mdates
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
-from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.seasonal import seasonal_decompose
+from sklearn.metrics import f1_score, confusion_matrix
+from chow_test import chow_test
+
+from sklearn.metrics import r2_score, median_absolute_error, mean_absolute_error
+from sklearn.metrics import median_absolute_error, mean_squared_error, mean_squared_log_error
+
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.stattools import adfuller
+
+import warnings
 
 warnings.filterwarnings('ignore')
 
@@ -36,75 +43,82 @@ data.info()
 data = data.drop(['DATAFLOW', 'LAST UPDATE', 'freq', 'unit', 'geo', 'OBS_FLAG', 'coicop'], axis=1). \
     rename(columns={'TIME_PERIOD': 'Date', 'OBS_VALUE': 'Rate'})
 
-# In[119]: Converting the data column into datetime format
+# Converting the data column into datetime format
 data['Date'] = pd.to_datetime(data['Date'])
+data.set_index('Date', inplace=True)
+data = data.resample('MS').mean()
+
+data.index
+
 # Statistics for each column
 data.describe()
-# In[120]: Checking for the missing values
+# Checking for the missing values
 data.isna().sum()
 
-# In[123]: Exploratory Data Analysis
-data['Date'] = pd.to_numeric(data['Date'])
-
-
-def plotMovingAverage(series, window, plot_intervals=False, scale=1.96, plot_anomalies=False):
-    """
-        series - dataframe with timeseries
-        window - rolling window size
-        plot_intervals - show confidence intervals
-        plot_anomalies - show anomalies
-    """
-    rolling_mean = series.rolling(window=12, min_periods=1).mean()
-    std_rolling = series.rolling(window=12).std()
-
-    plt.figure(figsize=(15, 5))
-    plt.title("Moving average\n window size = {}".format(window))
-    plt.plot(rolling_mean, "g", label="Rolling mean trend")
-
-    # Plot confidence intervals for smoothed values
-    if plot_intervals:
-        mae = mean_absolute_error(series[window:], rolling_mean[window:])
-        deviation = np.std(series[window:] - rolling_mean[window:])
-        lower_bond = rolling_mean - (mae + scale * deviation)
-        upper_bond = rolling_mean + (mae + scale * deviation)
-        plt.plot(upper_bond, "r--", label="Upper Bond / Lower Bond")
-        plt.plot(lower_bond, "r--")
-
-        # Having the intervals, find abnormal values
-        if plot_anomalies:
-            anomalies = pd.DataFrame(index=series.index, columns=series.columns)
-            anomalies[series < lower_bond] = series[series < lower_bond]
-            anomalies[series > upper_bond] = series[series > upper_bond]
-            plt.plot(anomalies, "ro", markersize=10)
-
-    plt.plot(series[window:], label="Actual values")
-    plt.legend(loc="upper left")
-    plt.grid(True)
-
-
-plotMovingAverage(data, window=1, plot_intervals=True, plot_anomalies=True)
-plt.show()
-
+# Visualization
 # Rolling mean and standard deviation
 mean_rolling = data['Rate'].rolling(window=12).mean()
 std_rolling = data['Rate'].rolling(window=12).std()
 
-# Plot inflation rates
 plt.figure(figsize=(12, 5))
-data['Rate'].plot(label='Original')
-mean_rolling.plot(color='crimson', label='Rolling Mean')
-std_rolling.plot(color='black', label='Rolling Std')
+plt.plot(data.index, data['Rate'], label='Original')
+plt.plot(mean_rolling.index, mean_rolling, color='crimson', label='Rolling Mean')
+plt.plot(std_rolling.index, std_rolling, color='black', label='Rolling Std')
 plt.title('Inflation Rates in Poland')
-plt.grid(axis='y', alpha=0.5)
+plt.grid(which='major', linestyle='--', alpha=0.5)
+
+# Format the x-axis date labels
+date_format = mdates.DateFormatter('%Y-%m-%d')
+plt.gca().xaxis.set_major_formatter(date_format)
 plt.legend(loc='best')
+
+# Get the first and last dates in the dataset
+first_date = data.index[0]
+last_date = data.index[-1]
+
+# Annotate the starting and ending points of the rolling mean
+plt.annotate(f'{data.index[0].strftime("%Y-%m-%d")}',
+             xy=(data.index[0], data.iloc[0]),
+             xytext=(data.index[0], data.iloc[0] + 5),
+             arrowprops=dict(arrowstyle='->'))
+plt.annotate(f'{data.index[-1].strftime("%Y-%m-%d")}',
+             xy=(data.index[-1], data.iloc[-1]),
+             xytext=(data.index[-1], data.iloc[-1] + 5),
+             arrowprops=dict(arrowstyle='->'))
+# Display the plot
+plt.xticks(rotation=45)
+plt.tight_layout()  # Adjust layout to prevent label cutoff
 plt.show()
+
+# Seasonal plot
+data['year'] = [d.year for d in data.index]
+data['month'] = [d.strftime('%b') for d in data.index]
+years = data['year'].unique()
+
+# Prep Colors
+np.random.seed(100)
+mycolors = np.random.choice(list(mpl.colors.XKCD_COLORS.keys()), len(years), replace=False)
+
+# Draw Plot
+plt.figure(figsize=(12, 10), dpi=80)
+for i, y in enumerate(years):
+    if i > 0:
+        plt.plot('month', 'Rate', data=data.loc[data.year == y, :], color=mycolors[i], label=y)
+        plt.text(data.loc[data.year == y, :].shape[0] - .9, data.loc[data.year == y, 'Rate'][-1:].values[0], y,
+                 fontsize=12, color=mycolors[i])
+
+# Decoration
+plt.gca().set(xlim=(-0.3, 11), ylim=(min(data['Rate']) - 1, max(data['Rate']) + 1), ylabel='$Inflation$',
+              xlabel='$Month$')
+plt.yticks(fontsize=12, alpha=.7)
+plt.title("Seasonal Plot of Inflation Time Series", fontsize=20)
+plt.show()
+
+data = data.drop(['year', 'month'], axis=1)
 
 # Seasonal Decomposition
 # Set the frequency of the index to monthly start
-data.index.freq = 'MS'
-print(data)
-# Seasonal decomposition
-decomp = seasonal_decompose(data['Rate'], model='additive')
+decomp = seasonal_decompose(data['Rate'], model='Multiplicable')
 fig, axes = plt.subplots(ncols=1, nrows=4, sharex=True, figsize=(12, 5))
 fig.suptitle('Seasonal Decomposition')
 decomp.trend.plot(ax=axes[0], legend=False)
@@ -118,26 +132,30 @@ decomp.observed.plot(ax=axes[3], legend=False)
 axes[3].set_ylabel('Original')
 plt.show()
 
-# In[123]: Stationary Check - Augmented Dickey-Fuller Test
-from statsmodels.tsa.stattools import adfuller
 
+# Stationary Check - Augmented Dickey-Fuller Test
+# ADF statistical test
 # ADF Test
-result = adfuller(data['Rate'])
-print('======= Augmented Dickey-Fuller Test Results =======\n')
-print("ADF Statistic:", result[0])
-print("p-value:", result[1])
-print("# Lags used: ", result[2])
-print("No of observations: ", result[3])
-print("Critical Values:")
-for key, value in result[4].items():
-    print(f"\t{key}: {value}")
+def adf_test(series):
+    result = adfuller(series, regression='c', autolag='AIC')
+    print('====Augmented Dickey-Fuller Test Results ====\n')
+    print('ADF Statistic: {:.6f}'.format(result[0]))
+    print('p-value: {:.6f}'.format(result[1]))
+    print('# Lags used: {}'.format(result[2]))
+    print('Number of observations: {}'.format(result[3]))
+    print('Critical values:')
+    for key, value in result[4].items():
+        print(f'\t{key}: {value}'.format(key, value))
 
-critical_value = result[4]['5%']
-if (result[1] <= 0.05) and (result[0] < critical_value):
-    print('\nStrong evidence against the null hypothesis, reject the null hypothesis.\
-            Data has no unit root and is stationary.')
-else:
-    print('\nWeak evidence against null hypothesis, time series has a unit root, indicating it is non-stationary.')
+    critical_value = result[4]['5%']
+    if (result[1] <= 0.05) and (result[0] < critical_value):
+        print('\nReject the null hypothesis. Data has no unit root and is stationary.')
+    else:
+        print('\nWeak evidence against null hypothesis, time series has a unit root and is non-stationary.')
+    return
+
+
+adf_test(data)
 
 # KPSS Test
 from statsmodels.tsa.stattools import kpss
@@ -156,7 +174,7 @@ for key, value in result[3].items():
 
 critical_value = result[3]['5%']
 if result[1] <= 0.05 and result[0] < critical_value:
-    print('\nWeak evidence against the null hypothesis, reject the null hypothesis.\
+    print('\nWeak evidence against the null hypothesis, reject the null hypothesis\
             Data has a unit root and is non-stationary.')
 else:
     print('\nStrong evidence against null hypothesis, data is stationary.')
@@ -179,7 +197,6 @@ plt.tight_layout()
 plt.show()
 
 from scipy.signal import periodogram
-
 freq, power = periodogram(data['Rate'])
 
 # Plot the frequency vs. power periodogram
@@ -189,8 +206,8 @@ plt.ylabel('Power')
 plt.title('Frequency vs. Power Periodogram')
 plt.show()
 
+"""" not neccessary to transform since the data is stationary 
 from pandas.plotting import register_matplotlib_converters
-
 
 def transformation(series):
     register_matplotlib_converters()
@@ -226,8 +243,7 @@ def transformation(series):
     else:
         print('P value = {:.6f}, series is not stationary.'.format(result[1]))
 
-
-transformation(data.diff())
+transformation(data.diff()) """
 
 # finding the best p d and q values for the arima model
 train_data = data[1:len(data) - 12]
@@ -249,22 +265,22 @@ for p in p_values:
 
 # In[124]:
 
-model = ARIMA(data['Rate'], order=(1, 0, 1))
+model = ARIMA(data['Rate'], order=(1, 1, 1))
 model_fit = model.fit()
 
-# In[125]: Forecassting for the whole year
+# In[125]: Forecasting for the whole year
 prediction = model_fit.forecast(steps=12)
 
 # In[126]:
 # Loop through each month and year in 2023
-for month in range(8, 13):
+for month in range(8, 9):
     year = 2023
     predicted_inflation = prediction[(prediction.index.year == year) & (prediction.index.month == month)].values[0]
     print(
         f"Poland's predicted inflation rate for {pd.Timestamp(year, month, 1).strftime('%B %Y')} is: {predicted_inflation}%")
 
 
-# In[127]: # SARIMAX model
+# SARIMAX model
 # find best orders and evaluate each combination for SARIMAX model
 # series: must be a pandas dataframe
 def find_optimal_orders(series, verbose=True):
@@ -330,35 +346,33 @@ def find_optimal_orders(series, verbose=True):
 find_optimal_orders(data['Rate'], verbose=True)
 
 # In[129]:
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+
 from datetime import datetime
 
-X = data["Date"].values.reshape(-1, 1)
-y = data["Value"]
+data.reset_index(inplace=True)
+X = data['Date'].values.reshape(-1, 1)
+y = data['Rate']
 
 rf_regressor = RandomForestRegressor(n_estimators=100, random_state=42)
 rf_regressor.fit(X, y)
 
 # new variable for May 2023
-may_2023 = pd.DataFrame({'Date': [datetime(2023, 5, 1)]})  # Adjust the year and month accordingly
+august_2023 = pd.DataFrame({'Date': [datetime(2023, 8, 1)]})  # Adjust the year and month accordingly
 
 # prediction for may
-predicted_inflation_may_2023 = rf_regressor.predict(may_2023)
+predicted_inflation_august_2023 = rf_regressor.predict(august_2023)
 
 # the difference from the previous month (April 2023)
-previous_month_inflation = dt[dt["Date"] == datetime(2022, 5, 1)]["Value"].values[0]
-difference = predicted_inflation_may_2023 - previous_month_inflation
+previous_month_inflation = data[data["Date"] == datetime(2022, 8, 1)]["Rate"].values[0]
+difference = predicted_inflation_august_2023 - previous_month_inflation
 
-print("Poland's Predicted Inflation Rate for May 2023:", predicted_inflation_may_2023)
-print("Difference from the previous year same month (May 2022):", difference)
+print("Poland's Predicted Inflation Rate for August 2023:", predicted_inflation_august_2023)
+print("Difference from the previous year same month (August 2022):", difference)
 
 # In[130]:
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-
-# Assuming you have a DataFrame 'data' with columns 'Date' and 'Value'
-# Split the data into train and test sets
-
-X_train, X_test, y_train, y_test = train_test_split(dt.drop('Value', axis=1), dt['Value'], test_size=0.2,
+X_train, X_test, y_train, y_test = train_test_split(data.drop('Rate', axis=1), data['Rate'], test_size=0.2,
                                                     random_state=42)
 
 # Create and train the Random Forest Regressor
@@ -377,16 +391,10 @@ print(actual_values)
 print("\nRandom Forest Regressor Predictions:")
 print(rf_predictions)
 
-# In[131]:
-from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-
+#MAPE
 def mean_absolute_percentage_error(y_true, y_pred):
     return np.mean(np.abs((y_true - y_pred) / y_true)) * 100
-
-
-# Assuming you have the actual values stored in 'actual_values' and the predictions from each model
-# stored in 'arima_predictions' and 'rf_predictions' respectively.
 
 # Calculate MSE
 arima_mse = mean_squared_error(actual_values, arima_predictions)
@@ -419,4 +427,128 @@ elif arima_mae > rf_mae:
 else:
     print("The ARIMA and Random Forest Regressor models have the same MAE.")
 
-#
+# Prophet
+from prophet import Prophet
+
+# Rename columns to fit Prophet's naming convention
+data.reset_index(inplace=True)
+data.rename(columns={'Date': 'ds', 'Rate': 'y'}, inplace=True)
+
+# Initialize and fit the Prophet model
+model = Prophet()
+model.fit(data)
+
+# Create a dataframe for future dates (August 2023)
+future = pd.DataFrame({'ds': pd.date_range(start='2023-08-01', end='2023-12-31', freq='M')})
+
+# Make predictions
+forecast = model.predict(future)
+
+# Plot the forecast
+fig = model.plot(forecast)
+plt.title('Inflation Rate Forecast for August 2023')
+plt.xlabel('Date')
+plt.ylabel('Inflation Rate')
+plt.show()
+
+# Step 3: Print the predicted rates for each month and their values
+predicted_values = forecast[['ds', 'yhat']].tail()  # Get the last 5 predictions
+print("Predicted Inflation Rates for August to December 2023:")
+print(predicted_values)
+
+from pylab import rcParams
+import itertools
+
+# SARIMAX
+# Import data
+file_path = '/Users/apple/Downloads/prc_hicp_manr__custom_7158942_linear.csv'
+data = pd.read_csv(file_path)
+data = data.drop(['DATAFLOW', 'LAST UPDATE', 'freq', 'unit', 'geo', 'OBS_FLAG', 'coicop'], axis=1). \
+    rename(columns={'TIME_PERIOD': 'Date', 'OBS_VALUE': 'Rate'})
+
+# Converting the data column into datetime format
+data['Date'] = pd.to_datetime(data['Date'])
+data.set_index('Date', inplace=True)
+
+y = data['Rate'].resample('MS').mean()
+data.index
+
+p = d = q = range(0, 2)
+pdq = list(itertools.product(p, d, q))
+seasonal_pdq = [(x[0], x[1], x[2], 12) for x in list(itertools.product(p, d, q))]
+print('Examples of parameter combinations for Seasonal ARIMA...')
+print('SARIMAX: {} x {}'.format(pdq[1], seasonal_pdq[1]))
+print('SARIMAX: {} x {}'.format(pdq[1], seasonal_pdq[2]))
+print('SARIMAX: {} x {}'.format(pdq[2], seasonal_pdq[3]))
+print('SARIMAX: {} x {}'.format(pdq[2], seasonal_pdq[4]))
+
+import statsmodels.api as sm
+
+best_aic = float("inf")
+best_order = None
+best_seasonal_order = None
+
+for param in pdq:
+    for param_seasonal in seasonal_pdq:
+        try:
+            mod = sm.tsa.statespace.SARIMAX(y, order=param, seasonal_order=param_seasonal, enforce_stationarity=False,
+                                            enforce_invertibility=False)
+            results = mod.fit()
+            aic = results.aic
+            if aic < best_aic:
+                best_aic = aic
+                best_order = param
+                best_seasonal_order = param_seasonal
+            print('ARIMA{}x{}12 - AIC:{}'.format(param, param_seasonal, aic))
+        except:
+            continue
+
+print('Best ARIMA{}x{}12 - AIC:{}'.format(best_order, best_seasonal_order, best_aic))
+
+mod = sm.tsa.statespace.SARIMAX(y,
+                                order=(1, 1, 1),
+                                seasonal_order=(1, 0, 1, 12),
+                                enforce_stationarity=False,
+                                enforce_invertibility=False)
+results = mod.fit()
+print(results.summary().tables[1])
+
+results.plot_diagnostics(figsize=(16, 8))
+plt.show()
+
+pred = results.get_prediction(start=pd.to_datetime('2020-07-01'), dynamic=False)
+pred_ci = pred.conf_int()
+ax = y['2018':].plot(label='observed')
+pred.predicted_mean.plot(ax=ax, label='One-step ahead Forecast', alpha=.7, figsize=(14, 7))
+ax.fill_between(pred_ci.index,
+                pred_ci.iloc[:, 0],
+                pred_ci.iloc[:, 1], color='k', alpha=.2)
+ax.set_xlabel('Date')
+ax.set_ylabel('Inflation')
+plt.legend()
+plt.show()
+
+# Model Evaluation
+y_forecasted = pred.predicted_mean
+y_truth = y['2017-01-01':]
+mse = ((y_forecasted - y_truth) ** 2).mean()
+print('The Mean Squared Error of our forecasts is {}'.format(round(mse, 2)))
+
+print('The Root Mean Squared Error of our forecasts is {}'.format(round(np.sqrt(mse), 2)))
+
+pred_uc = results.get_forecast(steps=36)
+pred_ci = pred_uc.conf_int()
+ax = y.plot(label='Observed', figsize=(14, 7))
+pred_uc.predicted_mean.plot(ax=ax, label='Forecast')
+ax.fill_between(pred_ci.index,
+                pred_ci.iloc[:, 0],
+                pred_ci.iloc[:, 1], color='k', alpha=.25)
+ax.set_xlabel('Date')
+ax.set_ylabel('Inflation')
+plt.legend()
+plt.show()
+
+# Step 3: Print the predicted rates for each month and their values
+predicted_values = forecast[['ds', 'yhat']].tail()  # Get the last 5 predictions
+print("Predicted Inflation Rates for August to December 2023:")
+print(predicted_values)
