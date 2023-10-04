@@ -15,5 +15,5 @@ I will explain the theory behind the practice of forecasting inflation. My focus
 Rising inflation reduces consumers' purchasing power. It can erode consumer confidence in spending, leading to an economic slowdown. High inflation can lead to uncertainty about future costs and revenues, impacting investment decisions. Inflation often leads to higher costs for raw materials, labor, and energy, reducing profit margins. Additionally, High inflation can lead to currency depreciation, affecting international trade and investments.
 By addressing these potential risks and implementing appropriate mitigation strategies, businesses and governments can better navigate the challenges associated with increasing inflation, foster resilience, and minimize negative impacts.
 
-### Dataset:
+### Dataset
 Data is collected from Eurostat. Eurostat is the statistical office of the European Union, responsible for publishing high-quality Europe-wide statistics and indicators: https://ec.europa.eu/eurostat/databrowser/view/PRC_HICP_MANR__custom_7158942/default/table?lang=en
