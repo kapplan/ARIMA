@@ -36,7 +36,7 @@ from sklearn.model_selection import train_test_split
 from chow_test import chow_test
 from pmdarima import auto_arima
 
-# Suppress warnings (usually placed at the end of import section)
+# Suppress warnings
 warnings.filterwarnings('ignore')
 
 # Import data
