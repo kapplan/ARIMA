@@ -1,7 +1,5 @@
 # Time Series Forecasting and Analysis using ARIMA (Predicting Poland's Inflation)
 
-Forecasting is a challenging job, requiring a delicate balance of intuition, analysis, and a sprinkle of luck. A good forecast is almost like magic, and a faulty one can have really bad consequences. Whether it's predicting consumer behavior, estimating sales figures, or foreseeing industry changes, accurate forecasting helps us navigate the uncertain terrain of the future. We can anticipate market trends, plan for future demands, and make informed decisions that can shape our success.
-
 Time series data consists of a sequence of data points collected at regular time intervals. This type of data is essential in various industries, including finance, economics, and weather forecasting. Analyzing time series data allows us to uncover valuable patterns, trends, and correlations that enable informed decision-making and predictions.
 
 This project has two main goals: time series analysis from a theoretical perspective, and deploying a machine learning model that forecasts inflation along the way.
