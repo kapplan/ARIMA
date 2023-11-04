@@ -3,36 +3,40 @@
 # Başak Kaplan
 # Models used: ARIMA
 
-# Importing the necessary libraries
-import pandas as pd
-import numpy as np
-from matplotlib import pyplot
+# Standard library imports
+import itertools
+import warnings
 
-import matplotlib.pyplot as plt
+# Third-party imports
 import matplotlib as mpl
 import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+from matplotlib import pyplot
+import numpy as np
+import pandas as pd
 import seaborn as sns
-
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
-from statsmodels.tsa.seasonal import seasonal_decompose
-from sklearn.metrics import f1_score, confusion_matrix
-from chow_test import chow_test
-
-from sklearn.metrics import r2_score, median_absolute_error, mean_absolute_error
-from sklearn.metrics import median_absolute_error, mean_squared_error, mean_squared_log_error
-
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.stattools import kpss
-from statsmodels.tsa.stattools import adfuller
-from pmdarima import auto_arima
-from statsmodels.graphics.tsaplots import plot_predict
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from scipy.signal import periodogram
-import warnings
-import itertools
 import statsmodels.api as sm
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf, plot_predict
+from statsmodels.tsa.arima.model import ARIMA
+from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.tsa.stattools import adfuller, kpss
+from sklearn.metrics import (
+    mean_squared_error,
+    mean_absolute_error,
+    mean_squared_log_error,
+    r2_score,
+    f1_score,
+    confusion_matrix,
+    median_absolute_error,
+)
+from sklearn.model_selection import train_test_split
 
+# Local application/library-specific imports
+from chow_test import chow_test
+from pmdarima import auto_arima
+
+# Suppress warnings (usually placed at the end of import section)
 warnings.filterwarnings('ignore')
 
 # Import data
