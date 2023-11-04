@@ -428,8 +428,6 @@ print(f"The date of the maximum residual is: {max_residual_date}")
 second_max_residual_date = residuals.nlargest(2).idxmin()
 print(f"The date of the second maximum residual is: {second_max_residual_date}")  # 2022-03-01
 
-second_max_residual_date = residuals.nlargest(6).idxmin()
-print(f"The date of the second maximum residual is: {second_max_residual_date}")
 second_max_residual_date = residuals.nlargest(7).idxmin()
 print(f"The date of the second maximum residual is: {second_max_residual_date}")  # 2023-02-01
 
