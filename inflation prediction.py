@@ -147,8 +147,7 @@ df_add.columns = ['trend', 'seasoanilty', 'residual', 'actual_values']
 df_add.head()
 
 
-# Stationary Check - Augmented Dickey-Fuller Test
-# ADF statistical test
+# Stationary Check
 # ADF Test
 def adf_test(series):
     result = adfuller(series, regression='c', autolag='AIC')
@@ -172,7 +171,6 @@ def adf_test(series):
 adf_test(data)
 
 # KPSS Test
-
 # Perform the KPSS test on the 'Rate' column
 result = kpss(data['Rate'])
 
@@ -304,7 +302,7 @@ model = ARIMA(data['Rate'], order=best_params)
 model_fit = model.fit()
 print(model_fit.summary())
 
-# Forecasting for the remainder of 2023 and January and February of 2024
+# Forecasting for the remainder of 2023
 prediction = model_fit.forecast(steps=7)
 for month in range(10, 13):
     year = 2023
