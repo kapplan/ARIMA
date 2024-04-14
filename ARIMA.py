@@ -2,22 +2,22 @@
 import itertools
 import warnings
 
-# Third-party imports
-import matplotlib as mpl
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-from matplotlib import pyplot
-from scipy.stats import pearsonr
+# Suppress warnings
+warnings.filterwarnings('ignore')
+
+# Third-party imports for data handling
 import numpy as np
 import pandas as pd
-import seaborn as sns
-from scipy.signal import periodogram
+
+# Third-party imports for statistical modeling
 import statsmodels.api as sm
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf, plot_predict
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, kpss
+from pmdarima import auto_arima
+
+# Third-party imports for machine learning
 from sklearn.metrics import (
     mean_squared_error,
     mean_absolute_error,
@@ -28,73 +28,25 @@ from sklearn.metrics import (
     median_absolute_error,
 )
 from sklearn.model_selection import train_test_split
-from pandas.plotting import register_matplotlib_converters
-# Local application/library-specific imports
-from pmdarima import auto_arima
 
-# Importing libraries for SARIMAX
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-import statsmodels.api as sm
-import itertools
-import warnings
-from pylab import rcParams
-
-# Suppress warnings
-warnings.filterwarnings('ignore')
-
-# Import data
-file_path = '/Users/apple/Downloads/prc_hicp_manr__custom_7843973_linear.csv'
-data = pd.read_csv(file_path)
-
-data.head()
-data.tail()
-
-# See the data types and non-missing values
-data.info()
-
-# Standard library imports
-import itertools
-import warnings
-
-# Third-party imports
+# Third-party imports for plotting and visualization
 import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 from matplotlib import pyplot
-from scipy.stats import pearsonr
-import numpy as np
-import pandas as pd
-import seaborn as sns
-from scipy.signal import periodogram
-import statsmodels.api as sm
-from statsmodels.graphics.tsaplots import plot_acf, plot_pacf, plot_predict
-from statsmodels.tsa.arima.model import ARIMA
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import adfuller, kpss
-from sklearn.metrics import (
-    mean_squared_error,
-    mean_absolute_error,
-    mean_squared_log_error,
-    r2_score,
-    f1_score,
-    confusion_matrix,
-    median_absolute_error,
-)
-from sklearn.model_selection import train_test_split
 from pandas.plotting import register_matplotlib_converters
-# Local application/library-specific imports
-from pmdarima import auto_arima
-
-# Importing libraries for SARIMAX
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-import statsmodels.api as sm
-import itertools
-import warnings
+from scipy.stats import pearsonr
+from scipy.signal import periodogram
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf, plot_predict
+import seaborn as sns
 from pylab import rcParams
 
-# Suppress warnings
-warnings.filterwarnings('ignore')
+# Plot settings
+plt.style.use('seaborn')
+mpl.rcParams['axes.labelsize'] = 14
+mpl.rcParams['xtick.labelsize'] = 12
+mpl.rcParams['ytick.labelsize'] = 12
+mpl.rcParams['text.color'] = 'k'
 
 # Import data
 file_path = '/Users/apple/Downloads/prc_hicp_manr__custom_7843973_linear.csv'
@@ -202,7 +154,6 @@ df_add = pd.concat([decomp.trend, decomp.seasonal, decomp.resid, decomp.observed
 df_add.columns = ['trend', 'seasoanilty', 'residual', 'actual_values']
 df_add.head()
 
-
 # Stationary Check
 # ADF Test
 def adf_test(series):
@@ -237,7 +188,7 @@ print("Critical Values:")
 for key, value in result[3].items():
     print(f"\t{key}: {value}")
 
-# Correction: Interpretation of the KPSS test results
+# Interpretation of the KPSS test results
 critical_value = result[3]['5%']
 if result[0] > critical_value:
     print('\nStrong evidence against the null hypothesis, we reject the null hypothesis. Data is non-stationary.')
@@ -283,12 +234,54 @@ plt.ylabel('Power')
 plt.title('Frequency vs. Power Periodogram')
 plt.show()
 
+# Bai-Perron test for Structural Breakpoint Test
+import ruptures as rpt
+
+# Convert index to integer for analysis
+data['Time'] = range(len(data))
+
+# Detection
+algo = rpt.Pelt(model="l1").fit(data['Rate'].values)
+result = algo.predict(pen=3)
+
+# Display results
+rpt.display(data['Rate'].values, result)
+plt.show()
+
+# Print change points
+print("Change points detected at indices:", result)
+
+change_points = [10, 20, 25, 30, 35, 45, 50, 55, 65, 80, 90, 95, 100, 120, 130, 155, 170, 190, 210, 240, 265, 275, 295,
+                 300, 305, 315, 320, 326]
+
+# Filter out any indices that are out of bounds for the DataFrame's size
+change_points = [cp for cp in change_points if cp < len(data)]
+
+# Plot the time series
+plt.figure(figsize=(14, 7))
+plt.plot(data.index, data['Rate'], label='Rate')
+
+# Mark each change point with a vertical line
+for cp in change_points:
+    plt.axvline(x=data.index[cp], color='r', linestyle='--', label='Change Point' if cp == change_points[0] else "")
+
+# Adding legend only once for Change Point
+plt.legend()
+plt.title('Time Series with Detected Change Points')
+plt.show()
+
+# Retrieve the dates corresponding to these indices
+break_dates = data.index[change_points]
+print("Dates of detected structural breaks:")
+print(break_dates)
+
+data.drop(['Time'], axis=1, inplace=True)
+
 
 # Differencing
 def transformation(series):
     register_matplotlib_converters()
 
-    # Ensure the series is a differenced series passed to the function
     # Plot the transformed (differenced) series
     fig = plt.figure(figsize=(16, 6))
     ax1 = fig.add_subplot(1, 3, 1)
@@ -316,7 +309,7 @@ def transformation(series):
     plt.tight_layout()
     plt.show()
 
-    # ADF Test to check stationarity
+    # ADF Test to check Stationarity
     result = adfuller(series.dropna(), autolag='AIC')
     print(f'ADF Statistic: {result[0]}')
     print(f'p-value: {result[1]}')
@@ -339,10 +332,7 @@ def transformation(series):
     else:
         print('No evidence against the null hypothesis; the series is stationary.')
 
-
 transformation(data.diff())
-
-# Possible p d q based on visual inspection of ACF and PACF
 
 # Finding p d q values
 train_data = data[1:len(data) - 12]
@@ -425,7 +415,7 @@ model = ARIMA(data['Rate'], order=(2, 1, 5))
 model_fit = model.fit()
 print(model_fit.summary())
 
-# Forecasting for the remainder of 2023
+# Forecasting for 5 months into the future
 prediction = model_fit.forecast(steps=5)
 for month in range(3, 8):
     year = 2024
@@ -434,7 +424,7 @@ for month in range(3, 8):
         f"Poland's predicted inflation rate for {pd.Timestamp(year, month, 1).strftime('%B %Y')} is: {predicted_inflation}%")
 
 # Generate predictions and confidence intervals
-pred = model_fit.get_prediction(start=pd.to_datetime('2020-01-01'), dynamic=False)
+pred = model_fit.get_prediction(start=pd.to_datetime('2018-01-01'), dynamic=False)
 pred_ci = pred.conf_int()
 
 # Plot the actual data and predictions
@@ -451,20 +441,10 @@ fig, ax = plt.subplots(figsize=(14, 7))
 data['Rate'].plot(ax=ax, label='Actual')
 model_fit.fittedvalues.plot(ax=ax, color='red', label='Fitted')
 
-# Predictions (assuming model_fit is a results object from ARIMA)
+# Predictions
 plot_predict(model_fit, start='2020', end='2025', ax=ax, plot_insample=False)
 ax.set_title('Inflation Rates in Poland: Actual vs Fitted vs Predicted')
 ax.legend(loc='best')
-plt.show()
-
-# One step ahead forecast
-fig, ax = plt.subplots(figsize=(14, 7))
-data['2020':].plot(ax=ax, label='Observed')
-pred.predicted_mean.plot(ax=ax, label='One-step ahead Forecast', alpha=.7)
-ax.fill_between(pred_ci.index, pred_ci.iloc[:, 0], pred_ci.iloc[:, 1], color='k', alpha=.2)
-ax.set_xlabel('Date')
-ax.set_ylabel('Inflation Rate')
-ax.legend()
 plt.show()
 
 # Calculate residuals
@@ -489,114 +469,3 @@ print(f"The date of the maximum residual is: {max_residual_date}")
 # Find the date of the second maximum residual
 second_max_residual_date = residuals.nlargest(2).idxmin()
 print(f"The date of the second maximum residual is: {second_max_residual_date}")  # 2022-03-01
-second_max_residual_date = residuals.nlargest(7).idxmin()
-print(f"The date of the second maximum residual is: {second_max_residual_date}")  # 2023-02-01
-
-
-# Recursive Forecast
-def recursive_forecast(data, start_date, end_date, forecast_horizon, order):
-    """
-    Performs recursive forecasting and calculates forecast errors.
-
-    Parameters:
-    - data: pd.Series, time series data with datetime index.
-    - start_date: str, initial model estimation period end.
-    - end_date: str, last date to include in forecasting.
-    - forecast_horizon: int, number of steps ahead to forecast.
-    - order: tuple, ARIMA model order (p, d, q).
-
-    Returns:
-    - dict: Forecast errors for each horizon (ME, MAE, RMSE).
-    """
-    forecast_errors = {i: [] for i in range(1, forecast_horizon + 1)}
-
-    for end_date in pd.date_range(start=pd.Timestamp(start_date), end=pd.Timestamp(end_date), freq='M'):
-        train_data = data[:end_date]
-        model = ARIMA(train_data, order=order)
-        model_fit = model.fit()
-
-        forecast = model_fit.forecast(steps=forecast_horizon)
-        actual = data[end_date + pd.offsets.MonthBegin(1):].head(forecast_horizon)
-
-        for i, (pred, act) in enumerate(zip(forecast, actual), start=1):
-            forecast_errors[i].append(act - pred)
-
-    # Calculate error metrics
-    error_metrics = {}
-    for horizon in range(1, forecast_horizon + 1):
-        errors = forecast_errors[horizon]
-        me = np.mean(errors)
-        mae = np.mean(np.abs(errors))
-        rmse = np.sqrt(np.mean(np.square(errors)))
-        error_metrics[horizon] = {'ME': me, 'MAE': mae, 'RMSE': rmse}
-
-    return error_metrics
-
-
-# Example usage:
-time_series_data = data['Rate']
-start_date = '2017-01-01'
-end_date = '2024-02-01'
-forecast_horizon = 4
-order = (2, 1, 5)
-
-errors = recursive_forecast(time_series_data, start_date, end_date, forecast_horizon, order)
-for horizon, metrics in errors.items():
-    print(f"Forecast Horizon {horizon} months:")
-    print(f"ME: {metrics['ME']:.4f}, MAE: {metrics['MAE']:.4f}, RMSE: {metrics['RMSE']:.4f}")
-
-# SARIMA
-from statsmodels.tsa.statespace.sarimax import SARIMAX
-import statsmodels.api as sm
-import itertools
-import warnings
-from pylab import rcParams
-
-file_path = '/Users/apple/Downloads/prc_hicp_manr__custom_7843973_linear.csv'
-data = pd.read_csv(file_path)
-data = data.drop(['DATAFLOW', 'LAST UPDATE', 'freq', 'unit', 'geo', 'OBS_FLAG', 'coicop'], axis=1).rename(
-    columns={'TIME_PERIOD': 'Date', 'OBS_VALUE': 'Rate'})
-data.set_index('Date', inplace=True)
-
-# Assuming 'data' is your DataFrame and you have a 'Rate' column for analysis
-# Example data splitting
-train_data = data['Rate'][1:len(data) - 12]
-
-# SARIMAX Model Parameter Setup
-p = range(0, 3)
-q = range(0, 8)
-d = 1
-pdq = list(itertools.product(p, [d], q))
-seasonal_pdq = [(x[0], x[1], x[2], 12) for x in pdq]  # Assuming seasonal period of 12 (e.g., monthly data)
-
-# Lists to store results
-aic_bic_results = []
-
-# Loop through all combinations of parameters to fit models and store AIC/BIC
-for param in pdq:
-    for seasonal_param in seasonal_pdq:
-        try:
-            mod = sm.tsa.SARIMAX(train_data,
-                                 order=param,
-                                 seasonal_order=seasonal_param,
-                                 enforce_stationarity=False,
-                                 enforce_invertibility=False)
-            results = mod.fit()
-            # Storing param, AIC, and BIC
-            aic_bic_results.append((param, seasonal_param, results.aic, results.bic))
-        except Exception as e:
-            continue
-
-# Sorting based on AIC and BIC
-sorted_by_aic = sorted(aic_bic_results, key=lambda x: x[2])[:5]
-sorted_by_bic = sorted(aic_bic_results, key=lambda x: x[3])[:5]
-
-# Printing the top 5 AIC results
-print("Top 5 AIC:")
-for result in sorted_by_aic:
-    print(f"Params: ARIMA{result[0]}x{result[1]} - AIC: {result[2]} - BIC: {result[3]}")
-
-# Printing the top 5 BIC results
-print("\nTop 5 BIC:")
-for result in sorted_by_bic:
-    print(f"Params: ARIMA{result[0]}x{result[1]} - AIC: {result[2]} - BIC: {result[3]}")
