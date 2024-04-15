@@ -510,7 +510,6 @@ def recursive_forecast(data, start_date, end_date, forecast_horizon, order):
 
     return error_metrics
 
-
 # Example usage:
 time_series_data = data['Rate']
 start_date = '2017-01-01'

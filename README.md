@@ -11,6 +11,8 @@ explanations, please visit my Medium page. You can find detailed articles and di
 results, and insights gained during this project:
 [Time Traveling with Data: Forecasting Inflation for 2024](https://medium.com/@kapplan)
 
+## Findings
+
 ### Key Features
 
 - **Time Series Decomposition**
@@ -23,14 +25,14 @@ Time series data consists of a sequence of data points collected at regular time
 essential in various industries, including finance, economics, and weather forecasting. Analyzing time series data
 allows us to uncover valuable patterns, trends, and correlations that enable informed decision-making and predictions.
 
-## Objective
+### Objective
 
 - Understand the characteristics of the inflation rate data. Identify trends, seasonality, and any patterns that might
   influence the inflation rate.
 - Build a model that can predict the future values of inflation rate in Poland for the latter half of 2023 using HICP
   data.
 
-## Problem definition
+### Problem definition
 
 Rising inflation reduces consumers' purchasing power. It can erode consumer confidence in spending, leading to an
 economic slowdown. High inflation can lead to uncertainty about future costs and revenues, impacting investment
@@ -45,13 +47,13 @@ Data is collected from Eurostat. Eurostat is the statistical office of the Europ
 high-quality Europe-wide statistics and
 indicators: https://ec.europa.eu/eurostat/databrowser/view/PRC_HICP_MANR__custom_7158942/default/table?lang=en
 
-## Installation
+###Installation
 
 Install the project dependencies via pip with the following command:
 
 ```pip install numpy pandas matplotlib scipy statsmodels scikit-learn seaborn ruptures pmdarima```
 
-## Usage
+### Usage
 
 Follow the steps below to get started with the application:
 
@@ -75,6 +77,6 @@ model_fit = model.fit()
 print(model_fit.summary())
 ```
 
-## Contributing
+### Contributing
 
 Contributions are welcome! Please fork the repository and submit pull requests with your proposed changes :)
