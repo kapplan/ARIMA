@@ -16,6 +16,7 @@ from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import adfuller, kpss
 from pmdarima import auto_arima
+import ruptures as rpt
 
 # Third-party imports for machine learning
 from sklearn.metrics import (
@@ -173,7 +174,6 @@ def adf_test(series):
     else:
         print('\nCannot reject the null hypothesis. Data may have a unit root and be non-stationary.')
 
-
 adf_test(data['Rate'])
 
 # KPSS Test
@@ -210,6 +210,7 @@ ax[1].annotate('Strong correlation at lag = 2', xy=(2.1, -0.5), xycoords='data',
 plt.tight_layout()
 plt.show()
 
+# Cyclic Behavior Detection: Frequency vs. periodogram
 fs = 1 / 12  # The sampling frequency. For monthly data, it would be 1 sample per month.
 # Compute the periodogram
 frequencies, power = periodogram(data['Rate'], fs=fs)
@@ -235,8 +236,6 @@ plt.title('Frequency vs. Power Periodogram')
 plt.show()
 
 # Bai-Perron test for Structural Breakpoint Test
-import ruptures as rpt
-
 # Convert index to integer for analysis
 data['Time'] = range(len(data))
 
@@ -276,7 +275,6 @@ print("Dates of detected structural breaks:")
 print(break_dates)
 
 data.drop(['Time'], axis=1, inplace=True)
-
 
 # Differencing
 def transformation(series):
@@ -411,6 +409,7 @@ print(f'Best BIC: {best_bic}')
 print(f'Best Parameters: {best_params}')
 
 # In[124]:
+# ARIMA
 model = ARIMA(data['Rate'], order=(2, 1, 5))
 model_fit = model.fit()
 print(model_fit.summary())
@@ -447,7 +446,7 @@ ax.set_title('Inflation Rates in Poland: Actual vs Fitted vs Predicted')
 ax.legend(loc='best')
 plt.show()
 
-# Calculate residuals
+# Calculate Residuals
 residuals = data['Rate'] - results.fittedvalues
 
 # Plot residuals
@@ -458,6 +457,7 @@ plt.legend(loc='best')
 plt.show()
 print(residuals.describe())
 
+# Density of Residuls
 fig, ax = plt.subplots(figsize=(14, 7))
 residuals.plot(kind='kde', ax=ax, title="Density of Residual Errors")
 plt.show()
@@ -468,4 +468,57 @@ max_residual_date = residuals.nlargest(1).idxmin()
 print(f"The date of the maximum residual is: {max_residual_date}")
 # Find the date of the second maximum residual
 second_max_residual_date = residuals.nlargest(2).idxmin()
-print(f"The date of the second maximum residual is: {second_max_residual_date}")  # 2022-03-01
+print(f"The date of the second maximum residual is: {second_max_residual_date}")
+
+
+# Recursive Forecast
+def recursive_forecast(data, start_date, end_date, forecast_horizon, order):
+    """
+    Performs recursive forecasting and calculates forecast errors.
+
+    Parameters:
+    - data: pd.Series, time series data with datetime index.
+    - start_date: str, initial model estimation period end.
+    - end_date: str, last date to include in forecasting.
+    - forecast_horizon: int, number of steps ahead to forecast.
+    - order: tuple, ARIMA model order (p, d, q).
+
+    Returns:
+    - dict: Forecast errors for each horizon (ME, MAE, RMSE).
+    """
+    forecast_errors = {i: [] for i in range(1, forecast_horizon + 1)}
+
+    for end_date in pd.date_range(start=pd.Timestamp(start_date), end=pd.Timestamp(end_date), freq='M'):
+        train_data = data[:end_date]
+        model = ARIMA(train_data, order=order)
+        model_fit = model.fit()
+
+        forecast = model_fit.forecast(steps=forecast_horizon)
+        actual = data[end_date + pd.offsets.MonthBegin(1):].head(forecast_horizon)
+
+        for i, (pred, act) in enumerate(zip(forecast, actual), start=1):
+            forecast_errors[i].append(act - pred)
+
+    # Calculate error metrics
+    error_metrics = {}
+    for horizon in range(1, forecast_horizon + 1):
+        errors = forecast_errors[horizon]
+        me = np.mean(errors)
+        mae = np.mean(np.abs(errors))
+        rmse = np.sqrt(np.mean(np.square(errors)))
+        error_metrics[horizon] = {'ME': me, 'MAE': mae, 'RMSE': rmse}
+
+    return error_metrics
+
+
+# Example usage:
+time_series_data = data['Rate']
+start_date = '2017-01-01'
+end_date = '2024-02-01'
+forecast_horizon = 4
+order = (2, 1, 5)
+
+errors = recursive_forecast(time_series_data, start_date, end_date, forecast_horizon, order)
+for horizon, metrics in errors.items():
+    print(f"Forecast Horizon {horizon} months:")
+    print(f"ME: {metrics['ME']:.4f}, MAE: {metrics['MAE']:.4f}, RMSE: {metrics['RMSE']:.4f}")
