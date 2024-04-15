@@ -8,7 +8,6 @@ I will explain the theory behind the practice of forecasting inflation. My focus
 ## Objective
 - Understand the characteristics of the inflation rate data. Identify trends, seasonality, and any patterns that might influence the inflation rate.
 - Build a model that can predict the future values of inflation rate in Poland for the latter half of 2023 using HICP data.
-- Based on the forecasted inflation rates, provide recommendations to stakeholders, policymakers, and businesses on potential strategies to adapt to the predicted economic environment.
 ## Problem definition
 Rising inflation reduces consumers' purchasing power. It can erode consumer confidence in spending, leading to an economic slowdown. High inflation can lead to uncertainty about future costs and revenues, impacting investment decisions. Inflation often leads to higher costs for raw materials, labor, and energy, reducing profit margins. Additionally, High inflation can lead to currency depreciation, affecting international trade and investments.
 By addressing these potential risks and implementing appropriate mitigation strategies, businesses and governments can better navigate the challenges associated with increasing inflation, foster resilience, and minimize negative impacts.
