@@ -23,18 +23,18 @@ Forecasts (%):
 | June 2024  | 2.17%          |
 | July 2024  | 1.89%          |
 
-- **The periodogram indicated a seasonal component at a frequency of 0.0003, corresponding to a peak
-  power of 31741.7432, signaling seasonal patterns.**
-- **After the first differencing, the stationarity of the time series was confirmed with both the Augmented
-  Dickey-Fuller (ADF) and the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests.**
-- **Structural breaks were identified in the time series, which may correspond to significant external events such as
+- The periodogram indicated a seasonal component at a frequency of 0.0003, corresponding to a peak
+  power of 31741.7432, **signaling seasonal patterns.**
+- After the first differencing, the stationarity of the time series was confirmed with both the Augmented
+  Dickey-Fuller (ADF) and the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests.
+- Structural breaks were identified in the time series, which may correspond to significant external events such as
   COVID-19 pandemic, Russian invasion of Ukraine, Poland's new government after general elections of 2023, affecting
-  inflation rates.**
+  inflation rates.
 - **The model was fitted with ARIMA(2, 1, 5) parameters, chosen based on the lowest AIC and BIC values, which
   suggested a moderate fit.**
-- **Forecasting for the next 5 months of 2024, the model predicts inflation rates ranging from 3.29% in March to 1.89%
-  in July, highlighting a decreasing trend in inflation.**
-- **Mean residual of 0.0512 suggests a slight overestimation bias.**
+- Forecasting for the next 5 months of 2024, the model predicts inflation rates ranging from 3.29% in March to 1.89%
+  in July, highlighting a **decreasing trend in inflation.**
+- Mean residual of **0.0512** suggests a slight overestimation bias.
 
 ### Key Features
 
