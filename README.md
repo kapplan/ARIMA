@@ -17,7 +17,7 @@ results, and insights gained during this project:
   power of 31741.7432, signaling seasonal patterns.**
 - **After the first differencing, the stationarity of the time series was confirmed with both the Augmented
   Dickey-Fuller (ADF) and the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests.**
-- **Structural breaks were identified in the time series, which may correspond to significant economic events such as
+- **Structural breaks were identified in the time series, which may correspond to significant external events such as
   COVID-19 pandemic, Russian invasion of Ukraine, Poland's new government after general elections of 2023, affecting
   inflation rates.**
 - **The model was fitted with ARIMA(2, 1, 5) parameters, chosen based on the lowest AIC and BIC values, which
