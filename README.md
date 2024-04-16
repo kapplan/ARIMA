@@ -57,7 +57,7 @@ allows us to uncover valuable patterns, trends, and correlations that enable inf
 - Build a model that can predict the future values of inflation rate in Poland for the first half of 2024 using HICP
   data.
 
-### Problem definition
+### Problem Definition
 
 Rising inflation reduces consumers' purchasing power. It can erode consumer confidence in spending, leading to an
 economic slowdown. High inflation can lead to uncertainty about future costs and revenues, impacting investment
