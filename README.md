@@ -13,16 +13,15 @@ results, and insights gained during this project:
 
 ## Findings
 
-- **The periodogram of the dataset indicated a seasonal component at a frequency of 0.0003, corresponding to a peak
+- **The periodogram indicated a seasonal component at a frequency of 0.0003, corresponding to a peak
   power of 31741.7432, signaling seasonal patterns.**
 - **After the first differencing, the stationarity of the time series was confirmed with both the Augmented
   Dickey-Fuller (ADF) and the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests.**
-- **Structural breaks were identified in the time series, which may correspond to significant economic events affecting
+- **Structural breaks were identified in the time series, which may correspond to significant economic events such as
+  COVID-19 pandemic, Russian Invasion of Ukraine, Poland's new government after general elections of 2023, affecting
   inflation rates.**
-- **The model fitting was executed with ARIMA(2, 1, 5) parameters, chosen based on the lowest AIC and BIC values, which
+- **The model was fitted with ARIMA(2, 1, 5) parameters, chosen based on the lowest AIC and BIC values, which
   suggested a moderate fit.**
-- **Predictions made by the ARIMA model for the year 2024 show an expected gradual decrease in inflation rates from
-  March to July.**
 - **Forecasting for the next 5 months of 2024, the model predicts inflation rates ranging from 3.29% in March to 1.89%
   in July, highlighting a decreasing trend in inflation.**
 - **The residuals analysis revealed that while most forecast errors were minimal, there were instances of significant
@@ -31,13 +30,13 @@ results, and insights gained during this project:
 
 ### Key Features
 
-- **Time Series Decomposition**
-- **Stationarity Testing**
-- **Predictive Modeling**
-- **Visualization**
-- **Structural Break Analysis**
-- **Recursive Forecast**
-- **Model Evaluation**
+- Time Series Decomposition
+- Stationarity Testing
+- Predictive Modeling
+- Visualization
+- Structural Break Analysis
+- Recursive Forecast
+- Model Evaluation
 
 Time series data consists of a sequence of data points collected at regular time intervals. This type of data is
 essential in various industries, including finance, economics, and weather forecasting. Analyzing time series data
