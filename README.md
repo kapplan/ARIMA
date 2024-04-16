@@ -13,6 +13,16 @@ results, and insights gained during this project:
 
 ## Findings
 
+Forecasts (%):
+
+| Month      | Inflation Rate |
+|------------|----------------|
+| March 2024 | 3.29%          |
+| April 2024 | 2.98%          |
+| May 2024   | 2.54%          |
+| June 2024  | 2.17%          |
+| July 2024  | 1.89%          |
+
 - **The periodogram indicated a seasonal component at a frequency of 0.0003, corresponding to a peak
   power of 31741.7432, signaling seasonal patterns.**
 - **After the first differencing, the stationarity of the time series was confirmed with both the Augmented
@@ -24,9 +34,7 @@ results, and insights gained during this project:
   suggested a moderate fit.**
 - **Forecasting for the next 5 months of 2024, the model predicts inflation rates ranging from 3.29% in March to 1.89%
   in July, highlighting a decreasing trend in inflation.**
-- **The residuals analysis revealed that while most forecast errors were minimal, there were instances of significant
-  overestimation or underestimation, suggesting the model's occasional sensitivity to outliers or particular economic
-  events.**
+- **Mean residual of 0.0512 suggests a slight overestimation bias.**
 
 ### Key Features
 
