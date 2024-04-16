@@ -20,6 +20,8 @@ results, and insights gained during this project:
 - **Predictive Modeling**
 - **Visualization**
 - **Structural Break Analysis**
+- **Recursive Forecast**
+- **Model Evaluation**
 
 Time series data consists of a sequence of data points collected at regular time intervals. This type of data is
 essential in various industries, including finance, economics, and weather forecasting. Analyzing time series data
