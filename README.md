@@ -62,7 +62,7 @@ allows us to uncover valuable patterns, trends, and correlations that enable inf
 Rising inflation reduces consumers' purchasing power. It can erode consumer confidence in spending, leading to an
 economic slowdown. High inflation can lead to uncertainty about future costs and revenues, impacting investment
 decisions. Inflation often leads to higher costs for raw materials, labor, and energy, reducing profit margins.
-Additionally, High inflation can lead to currency depreciation, affecting international trade and investments.
+Additionally, high inflation can lead to currency depreciation, affecting international trade and investments.
 By addressing these potential risks and implementing appropriate mitigation strategies, businesses and governments can
 better navigate the challenges associated with increasing inflation, foster resilience, and minimize negative impacts.
 
