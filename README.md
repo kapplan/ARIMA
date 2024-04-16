@@ -18,7 +18,7 @@ results, and insights gained during this project:
 - **After the first differencing, the stationarity of the time series was confirmed with both the Augmented
   Dickey-Fuller (ADF) and the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests.**
 - **Structural breaks were identified in the time series, which may correspond to significant economic events such as
-  COVID-19 pandemic, Russian Invasion of Ukraine, Poland's new government after general elections of 2023, affecting
+  COVID-19 pandemic, Russian invasion of Ukraine, Poland's new government after general elections of 2023, affecting
   inflation rates.**
 - **The model was fitted with ARIMA(2, 1, 5) parameters, chosen based on the lowest AIC and BIC values, which
   suggested a moderate fit.**
