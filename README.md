@@ -49,7 +49,7 @@ Data is collected from Eurostat. Eurostat is the statistical office of the Europ
 high-quality Europe-wide statistics and
 indicators: https://ec.europa.eu/eurostat/databrowser/view/PRC_HICP_MANR__custom_7158942/default/table?lang=en
 
-###Installation
+### Installation
 
 Install the project dependencies via pip with the following command:
 
