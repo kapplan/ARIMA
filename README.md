@@ -43,7 +43,7 @@ Forecasts (%):
 - Predictive Modeling
 - Visualization
 - Structural Break Analysis
-- Recursive Forecast
+- Recursive Forecasting
 - Model Evaluation
 
 Time series data consists of a sequence of data points collected at regular time intervals. This type of data is
