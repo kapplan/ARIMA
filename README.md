@@ -34,7 +34,7 @@ Forecasts (%):
   suggested a moderate fit.**
 - Forecasting for the next 5 months of 2024, the model predicts inflation rates ranging from 3.29% in March to 1.89%
   in July, highlighting a **decreasing trend in inflation.**
-- Mean residual of **0.0512** suggests a slight overestimation bias.
+- Mean residual of **0.0512** suggests a **slight overestimation bias.**
 
 ### Key Features
 
