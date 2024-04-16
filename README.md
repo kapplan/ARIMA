@@ -13,6 +13,22 @@ results, and insights gained during this project:
 
 ## Findings
 
+- **The periodogram of the dataset indicated a seasonal component at a frequency of 0.0003, corresponding to a peak
+  power of 31741.7432, signaling seasonal patterns.**
+- **After the first differencing, the stationarity of the time series was confirmed with both the Augmented
+  Dickey-Fuller (ADF) and the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests.**
+- **Structural breaks were identified in the time series, which may correspond to significant economic events affecting
+  inflation rates.**
+- **The model fitting was executed with ARIMA(2, 1, 5) parameters, chosen based on the lowest AIC and BIC values, which
+  suggested a moderate fit.**
+- **Predictions made by the ARIMA model for the year 2024 show an expected gradual decrease in inflation rates from
+  March to July.**
+- **Forecasting for the next 5 months of 2024, the model predicts inflation rates ranging from 3.29% in March to 1.89%
+  in July, highlighting a decreasing trend in inflation.**
+- **The residuals analysis revealed that while most forecast errors were minimal, there were instances of significant
+  overestimation or underestimation, suggesting the model's occasional sensitivity to outliers or particular economic
+  events.**
+
 ### Key Features
 
 - **Time Series Decomposition**
@@ -43,11 +59,12 @@ better navigate the challenges associated with increasing inflation, foster resi
 
 ### Dataset
 
+The dataset consists of 326 monthly observations of Poland's HICP.
 Data is collected from Eurostat. Eurostat is the statistical office of the European Union, responsible for publishing
 high-quality Europe-wide statistics and
 indicators: https://ec.europa.eu/eurostat/databrowser/view/PRC_HICP_MANR__custom_7158942/default/table?lang=en
 
-###Installation
+### Installation
 
 Install the project dependencies via pip with the following command:
 
