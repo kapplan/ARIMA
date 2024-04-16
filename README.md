@@ -31,7 +31,7 @@ allows us to uncover valuable patterns, trends, and correlations that enable inf
 
 - Understand the characteristics of the inflation rate data. Identify trends, seasonality, and any patterns that might
   influence the inflation rate.
-- Build a model that can predict the future values of inflation rate in Poland for the latter half of 2023 using HICP
+- Build a model that can predict the future values of inflation rate in Poland for the first half of 2024 using HICP
   data.
 
 ### Problem definition
