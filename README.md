@@ -1,6 +1,6 @@
 # Time Series Forecasting and Analysis using ARIMA (Predicting Poland's Inflation)
 
-This project is dedicated to forecasting inflation rates for Poland in 2024 using advanced time series analysis
+This project is dedicated to forecasting inflation rates for Poland in 2024 using classical time series analysis
 techniques in Python. The core methodologies employed include ARIMA, one-step ahead forecasting, and recursive
 forecasting, alongside a comprehensive analysis of stationarity and structural breaks within the dataset.
 
