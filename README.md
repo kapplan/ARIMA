@@ -35,6 +35,7 @@ Forecasts (%):
 - Forecasting for the next 5 months of 2024, the model predicts inflation rates ranging from 3.29% in March to 1.89%
   in July, highlighting a **decreasing trend in inflation.**
 - Mean residual of **0.0512** suggests a **slight overestimation bias.**
+- Model forecast errors show that the **accuracy drops the more we try to predict ahead.**
 - **The model appears to fit the data, capturing key trends and seasonal patterns in Poland's inflation rates. However, exploring alternative models (such as SARIMAX, deep learning algorithms such as CNN) or transformations could further enhance the model's predictive power.**
 
 ### Key Features
