@@ -6,7 +6,7 @@ forecasting, alongside a comprehensive analysis of stationarity and structural b
 
 ## Detailed Analysis and Project Walkthrough
 
-For a comprehensive walkthrough of this project, please visit my Medium page. You can find detailed articles and discussions about the methodologies,
+For a comprehensive walkthrough of this project, please visit my Medium page. For detailed articles and discussions about the methodologies,
 results, and insights gained during this project:
 [Time Traveling with Data: Forecasting Inflation for 2024](https://medium.com/@basakaplan)
 
