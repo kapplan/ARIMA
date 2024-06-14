@@ -74,7 +74,7 @@ Forecasts (%):
 - Model forecast errors show that the **accuracy drops the more we try to predict ahead.**
 - **The model appears to fit the data, capturing key trends and seasonal patterns in Poland's inflation rates. 
 
-### Reccomendations for Future Analysis
+## Reccomendations for Future Analyses
 - Exploring alternative models (such as SARIMAX, deep learning algorithms such as CNN) or transformations could further enhance the model's predictive power.
 - Structural breaks have been identified, these segments can be treated individually, to find the optimal ARIMA parameters for each segment, and to fit different models to each segment. This approach may enhance the model's predictive power and the accuracy of the forecasts. 
 
