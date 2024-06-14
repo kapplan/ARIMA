@@ -10,6 +10,43 @@ For a comprehensive walkthrough of this project, please visit my Medium page. Fo
 results, and insights gained during this project:
 [Time Traveling with Data: Forecasting Inflation for 2024](https://medium.com/@basakaplan)
 
+### Objective
+
+- Understand the characteristics of the inflation rate data. Identify trends, seasonality, and any patterns that might
+  influence the inflation rate.
+- Build a model that can predict the future values of inflation rate in Poland for the first half of 2024 using HICP
+  data.
+  
+### Key Features
+
+- Time Series Decomposition
+- Stationarity Testing
+- Predictive Modeling
+- Visualization
+- Structural Break Analysis
+- Recursive Forecasting
+- Model Evaluation
+
+Time series data consists of a sequence of data points collected at regular time intervals. This type of data is
+essential in various industries, including finance, economics, and weather forecasting. Analyzing time series data
+allows us to uncover valuable patterns, trends, and correlations that enable informed decision-making and predictions.
+
+### Problem Definition
+
+Rising inflation reduces consumers' purchasing power. It can erode consumer confidence in spending, leading to an
+economic slowdown. High inflation can lead to uncertainty about future costs and revenues, impacting investment
+decisions. Inflation often leads to higher costs for raw materials, labor, and energy, reducing profit margins.
+Additionally, high inflation can lead to currency depreciation, affecting international trade and investments.
+By addressing these potential risks and implementing appropriate mitigation strategies, businesses and governments can
+better navigate the challenges associated with increasing inflation, foster resilience, and minimize negative impacts.
+
+### Dataset
+
+The dataset consists of 326 monthly observations of Poland's HICP.
+Data is collected from Eurostat. Eurostat is the statistical office of the European Union, responsible for publishing
+high-quality Europe-wide statistics and
+indicators: https://ec.europa.eu/eurostat/databrowser/view/PRC_HICP_MANR__custom_7158942/default/table?lang=en
+
 ## Findings
 
 Forecasts (%):
@@ -41,42 +78,6 @@ Forecasts (%):
 - Exploring alternative models (such as SARIMAX, deep learning algorithms such as CNN) or transformations could further enhance the model's predictive power.
 - Structural breaks have been identified, these segments can be treated individually, to find the optimal ARIMA parameters for each segment, and to fit different models to each segment. This approach may enhance the model's predictive power and the accuracy of the forecasts. 
 
-### Key Features
-
-- Time Series Decomposition
-- Stationarity Testing
-- Predictive Modeling
-- Visualization
-- Structural Break Analysis
-- Recursive Forecasting
-- Model Evaluation
-
-Time series data consists of a sequence of data points collected at regular time intervals. This type of data is
-essential in various industries, including finance, economics, and weather forecasting. Analyzing time series data
-allows us to uncover valuable patterns, trends, and correlations that enable informed decision-making and predictions.
-
-### Objective
-
-- Understand the characteristics of the inflation rate data. Identify trends, seasonality, and any patterns that might
-  influence the inflation rate.
-- Build a model that can predict the future values of inflation rate in Poland for the first half of 2024 using HICP
-  data.
-
-### Problem Definition
-
-Rising inflation reduces consumers' purchasing power. It can erode consumer confidence in spending, leading to an
-economic slowdown. High inflation can lead to uncertainty about future costs and revenues, impacting investment
-decisions. Inflation often leads to higher costs for raw materials, labor, and energy, reducing profit margins.
-Additionally, high inflation can lead to currency depreciation, affecting international trade and investments.
-By addressing these potential risks and implementing appropriate mitigation strategies, businesses and governments can
-better navigate the challenges associated with increasing inflation, foster resilience, and minimize negative impacts.
-
-### Dataset
-
-The dataset consists of 326 monthly observations of Poland's HICP.
-Data is collected from Eurostat. Eurostat is the statistical office of the European Union, responsible for publishing
-high-quality Europe-wide statistics and
-indicators: https://ec.europa.eu/eurostat/databrowser/view/PRC_HICP_MANR__custom_7158942/default/table?lang=en
 
 ### Installation
 
