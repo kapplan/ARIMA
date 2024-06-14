@@ -72,7 +72,7 @@ Forecasts (%):
   in July, highlighting a **decreasing trend in inflation.**
 - Mean residual of **0.0512** suggests a **slight overestimation bias.**
 - Model forecast errors show that the **accuracy drops the more we try to predict ahead.**
-- **The model appears to fit the data, capturing key trends and seasonal patterns in Poland's inflation rates. 
+- The model appears to fit the data, capturing key trends and seasonal patterns in Poland's inflation rates. 
 
 ## Reccomendations for Future Analyses
 - Exploring alternative models (such as SARIMAX, deep learning algorithms such as CNN) or transformations could further enhance the model's predictive power.
