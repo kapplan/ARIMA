@@ -76,7 +76,7 @@ Forecasts (%):
 
 ## Reccomendations for Future Analyses
 - Exploring alternative models (such as SARIMAX, deep learning algorithms such as CNN) or transformations could further enhance the model's predictive power.
-- Structural breaks have been identified, these segments can be treated individually, to find the optimal ARIMA parameters for each segment, and to fit different models to each segment. This approach may enhance the model's predictive power and the accuracy of the forecasts. 
+- Structural breaks have been identified,  ARIMAX with dummy variables for each segment can be investigated.
 
 
 ### Installation
