@@ -8,6 +8,7 @@ warnings.filterwarnings('ignore')
 # Third-party imports for data handling
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
 # Third-party imports for statistical modeling
 import statsmodels.api as sm
@@ -37,10 +38,13 @@ import matplotlib.pyplot as plt
 from matplotlib import pyplot
 from pandas.plotting import register_matplotlib_converters
 from scipy.stats import pearsonr
+from scipy import stats
 from scipy.signal import periodogram
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf, plot_predict
 import seaborn as sns
 from pylab import rcParams
+from sklearn import metrics
+from statsmodels.tools.sm_exceptions import ConvergenceWarning, ValueWarning
 
 # Plot settings
 plt.style.use('seaborn')
@@ -74,6 +78,34 @@ data.describe()
 # Checking for the missing values
 data.isna().sum()
 
+# Setting up the figure and axes for a 2x2 grid
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
+
+# Histogram
+ax1.hist(data['Rate'], bins=30, alpha=0.75, color='blue')
+ax1.set_title("Histogram of Rates")
+ax1.set_xlabel("Rate")
+ax1.set_ylabel("Frequency")
+
+# Box Plot
+ax2.boxplot(data['Rate'], vert=False)
+ax2.set_title("Box Plot of Rates")
+ax2.set_xlabel("Rate")
+
+# Q-Q Plot
+stats.probplot(data['Rate'], dist="norm", plot=ax3)
+ax3.set_title("Q-Q Plot")
+
+# Time Series Plot
+data['Date'] = pd.date_range(start='1/1/2020', periods=len(data), freq='D')
+ax4.plot(data['Date'], data['Rate'], marker='', linestyle='-', color='blue')
+ax4.set_title("Time Series Plot of Rates")
+ax4.set_xlabel("Date")
+ax4.set_ylabel("Rate")
+
+plt.tight_layout()  # Adjust layout to prevent overlap
+plt.show()
+
 # Visualization
 # Rolling mean and standard deviation
 mean_rolling = data['Rate'].rolling(window=12).mean()
@@ -97,43 +129,18 @@ last_date = data.index[-1]
 
 # Annotate the starting and ending points of the rolling mean
 plt.annotate(f'{data.index[0].strftime("%Y-%m-%d")}',
-             xy=(data.index[0], data.iloc[0]),
-             xytext=(data.index[0], data.iloc[0] + 5),
+             xy=(data.index[0], data['Rate'].iloc[0]),
+             xytext=(data.index[0], data['Rate'].iloc[0] + 2),
              arrowprops=dict(arrowstyle='->'))
+
 plt.annotate(f'{data.index[-1].strftime("%Y-%m-%d")}',
-             xy=(data.index[-1], data.iloc[-1]),
-             xytext=(data.index[-1], data.iloc[-1] + 5),
+             xy=(data.index[-1], data['Rate'].iloc[-1]),
+             xytext=(data.index[-1], data['Rate'].iloc[-1] + 2),
              arrowprops=dict(arrowstyle='->'))
 # Display the plot
 plt.xticks(rotation=45)
 plt.tight_layout()  # Adjust layout to prevent label cutoff
 plt.show()
-
-# Seasonal plot
-data['year'] = [d.year for d in data.index]
-data['month'] = [d.strftime('%b') for d in data.index]
-years = data['year'].unique()
-
-# Prep Colors
-np.random.seed(100)
-mycolors = np.random.choice(list(mpl.colors.XKCD_COLORS.keys()), len(years), replace=False)
-
-# Draw Plot
-plt.figure(figsize=(12, 10), dpi=80)
-for i, y in enumerate(years):
-    if i > 0:
-        plt.plot('month', 'Rate', data=data.loc[data.year == y, :], color=mycolors[i], label=y)
-        plt.text(data.loc[data.year == y, :].shape[0] - .9, data.loc[data.year == y, 'Rate'][-1:].values[0], y,
-                 fontsize=12, color=mycolors[i])
-
-# Decoration
-plt.gca().set(xlim=(-0.3, 11), ylim=(min(data['Rate']) - 1, max(data['Rate']) + 1), ylabel='$Inflation$',
-              xlabel='$Month$')
-plt.yticks(fontsize=12, alpha=.7)
-plt.title("Seasonal Plot of Inflation Time Series", fontsize=20)
-plt.show()
-
-data = data.drop(['year', 'month'], axis=1)
 
 # Seasonal Decomposition
 # Set the frequency of the index to monthly start
@@ -235,114 +242,81 @@ plt.ylabel('Power')
 plt.title('Frequency vs. Power Periodogram')
 plt.show()
 
-# Bai-Perron test for Structural Breakpoint Test
-# Convert index to integer for analysis
-data['Time'] = range(len(data))
 
-# Detection
-algo = rpt.Pelt(model="l1").fit(data['Rate'].values)
-result = algo.predict(pen=3)
-
-# Display results
-rpt.display(data['Rate'].values, result)
-plt.show()
-
-# Print change points
-print("Change points detected at indices:", result)
-
-change_points = [10, 20, 25, 30, 35, 45, 50, 55, 65, 80, 90, 95, 100, 120, 130, 155, 170, 190, 210, 240, 265, 275, 295,
-                 300, 305, 315, 320, 326]
-
-# Filter out any indices that are out of bounds for the DataFrame's size
-change_points = [cp for cp in change_points if cp < len(data)]
-
-# Plot the time series
-plt.figure(figsize=(14, 7))
-plt.plot(data.index, data['Rate'], label='Rate')
-
-# Mark each change point with a vertical line
-for cp in change_points:
-    plt.axvline(x=data.index[cp], color='r', linestyle='--', label='Change Point' if cp == change_points[0] else "")
-
-# Adding legend only once for Change Point
-plt.legend()
-plt.title('Time Series with Detected Change Points')
-plt.show()
-
-# Retrieve the dates corresponding to these indices
-break_dates = data.index[change_points]
-print("Dates of detected structural breaks:")
-print(break_dates)
-
-data.drop(['Time'], axis=1, inplace=True)
-
-# Differencing
+# Function to transform and check stationarity
 def transformation(series):
+    # Differencing the series
+    diff_series = series.diff().dropna()
+
+    # Register the converters for matplotlib
     register_matplotlib_converters()
 
     # Plot the transformed (differenced) series
     fig = plt.figure(figsize=(16, 6))
+
     ax1 = fig.add_subplot(1, 3, 1)
     ax1.set_title('Transformed Series')
-    ax1.plot(series, label='Differenced Series')
-    ax1.plot(series.rolling(window=12).mean(), color='crimson', label='Rolling Mean')
-    ax1.plot(series.rolling(window=12).std(), color='black', label='Rolling Std')
+    ax1.plot(diff_series, label='Differenced Series')
+    ax1.plot(diff_series.rolling(window=12).mean(), color='crimson', label='Rolling Mean')
+    ax1.plot(diff_series.rolling(window=12).std(), color='black', label='Rolling Std')
     ax1.legend()
 
     # Autocorrelation Plot
     ax2 = fig.add_subplot(1, 3, 2)
-    plot_acf(series.dropna(), ax=ax2, lags=50, title='Autocorrelation')
-    # Plot 95% confidence intervals
-    ax2.axhline(y=-1.96 / np.sqrt(len(series)), linestyle='--', color='gray')
-    ax2.axhline(y=1.96 / np.sqrt(len(series)), linestyle='--', color='gray')
+    plot_acf(diff_series, ax=ax2, lags=50, title='Autocorrelation')
+    ax2.axhline(y=-1.96 / np.sqrt(len(diff_series)), linestyle='--', color='gray')
+    ax2.axhline(y=1.96 / np.sqrt(len(diff_series)), linestyle='--', color='gray')
     ax2.set_xlabel('Lags')
 
     # Partial Autocorrelation Plot
     ax3 = fig.add_subplot(1, 3, 3)
-    plot_pacf(series.dropna(), ax=ax3, lags=50, title="Partial Autocorrelation")
-    # Plot 95% confidence intervals
-    ax3.axhline(y=-1.96 / np.sqrt(len(series)), linestyle='--', color='gray')
-    ax3.axhline(y=1.96 / np.sqrt(len(series)), linestyle='--', color='gray')
+    plot_pacf(diff_series, ax=ax3, lags=50, title="Partial Autocorrelation")
+    ax3.axhline(y=-1.96 / np.sqrt(len(diff_series)), linestyle='--', color='gray')
+    ax3.axhline(y=1.96 / np.sqrt(len(diff_series)), linestyle='--', color='gray')
     ax3.set_xlabel('Lags')
+
     plt.tight_layout()
     plt.show()
 
     # ADF Test to check Stationarity
-    result = adfuller(series.dropna(), autolag='AIC')
-    print(f'ADF Statistic: {result[0]}')
-    print(f'p-value: {result[1]}')
-    for key, value in result[4].items():
+    adf_result = adfuller(diff_series, autolag='AIC')
+    print(f'ADF Statistic: {adf_result[0]}')
+    print(f'p-value: {adf_result[1]}')
+    for key, value in adf_result[4].items():
         print(f'Critical Value ({key}): {value}')
-    if result[1] < 0.05:
-        print('Series is stationary.')
+    if adf_result[1] < 0.05:
+        print('Series is stationary according to ADF test.')
     else:
-        print('Series is not stationary.')
+        print('Series is not stationary according to ADF test.')
 
     # KPSS Test
-    result = kpss(series.dropna(), nlags='auto')  # Using 'auto' to automatically select the number of lags
-    print("KPSS Test Statistic:", result[0])
-    print("p-value:", result[1])
-    for key, value in result[3].items():
+    kpss_result = kpss(diff_series, nlags='auto')
+    print("KPSS Test Statistic:", kpss_result[0])
+    print("p-value:", kpss_result[1])
+    for key, value in kpss_result[3].items():
         print(f'Critical Value ({key}): {value}')
-    # Correct interpretation of the KPSS test results
-    if result[1] < 0.05:
-        print('Evidence suggests the series is not stationary.')
+    if kpss_result[1] < 0.05:
+        print('Evidence suggests the series is not stationary according to KPSS test.')
     else:
-        print('No evidence against the null hypothesis; the series is stationary.')
+        print('No evidence against the null hypothesis; the series is stationary according to KPSS test.')
 
-transformation(data.diff())
+    return diff_series
+
+
+# Example usage
+transformation(data['Rate'])
 
 # Finding p d q values
 train_data = data[1:len(data) - 12]
 test_data = data[len(data) - 12:]
 
 # Define the range of p, d, and q values for ARIMA parameters
-# Since 'd' is already given as 2, we only define ranges for 'p' and 'q'
+# Since 'd' is already given as 1 we only define ranges for 'p' and 'q'
 p = range(0, 3)
-q = range(0, 8)
+q = range(0, 7)
 d = 1
 
-# Generate all possible combinations of p, d, and q (with d fixed at 2)
+# Generate all possible combinations of p, d, and q (with d fixed at 1)
 pdq = list(itertools.product(p, [d], q))
 
 # Initialize variables to store the best parameters and minimum AIC
@@ -352,7 +326,7 @@ best_params = None
 # Loop through all combinations of parameters
 for param in pdq:
     try:
-        mod = sm.tsa.ARIMA(data['Rate'],
+        mod = sm.tsa.ARIMA(train_data['Rate'],
                            order=param,
                            enforce_stationarity=False,
                            enforce_invertibility=False)
@@ -375,7 +349,7 @@ print(f'Best Parameters: {best_params}')
 # Best BIC
 # Only define ranges for 'p' and 'q' based on ACF and PACF
 p = range(0, 3)
-q = range(0, 8)
+q = range(0, 7)
 d = 1  # d is already determined to be 1
 
 # Generate all possible combinations of p, d, and q (with d fixed at d=1)
@@ -415,7 +389,7 @@ model_fit = model.fit()
 print(model_fit.summary())
 
 # Forecasting for 5 months into the future
-prediction = model_fit.forecast(steps=5)
+prediction = model_fit.forecast(steps=6)
 for month in range(3, 8):
     year = 2024
     predicted_inflation = prediction[(prediction.index.year == year) & (prediction.index.month == month)].values[0]
@@ -457,7 +431,7 @@ plt.legend(loc='best')
 plt.show()
 print(residuals.describe())
 
-# Density of Residuls
+# Density of Residuals
 fig, ax = plt.subplots(figsize=(14, 7))
 residuals.plot(kind='kde', ax=ax, title="Density of Residual Errors")
 plt.show()
@@ -466,58 +440,111 @@ plt.show()
 residuals = data['Rate'] - results.fittedvalues
 max_residual_date = residuals.nlargest(1).idxmin()
 print(f"The date of the maximum residual is: {max_residual_date}")
+
 # Find the date of the second maximum residual
 second_max_residual_date = residuals.nlargest(2).idxmin()
-print(f"The date of the second maximum residual is: {second_max_residual_date}")
-
+print(f"The date of the second maximum residual is: {second_max_residual_date}")  # 2022-03-01
 
 # Recursive Forecast
 def recursive_forecast(data, start_date, end_date, forecast_horizon, order):
     """
-    Performs recursive forecasting and calculates forecast errors.
+       Performs recursive forecasting and calculates forecast errors.
 
-    Parameters:
-    - data: pd.Series, time series data with datetime index.
-    - start_date: str, initial model estimation period end.
-    - end_date: str, last date to include in forecasting.
-    - forecast_horizon: int, number of steps ahead to forecast.
-    - order: tuple, ARIMA model order (p, d, q).
+       Parameters:
+       - data: pd.Series, time series data with datetime index.
+       - start_date: str, initial model estimation period end.
+       - end_date: str, last date to include in forecasting.
+       - forecast_horizon: int, number of steps ahead to forecast.
+       - order: tuple, ARIMA model order (p, d, q).
 
-    Returns:
-    - dict: Forecast errors for each horizon (ME, MAE, RMSE).
-    """
+       Returns:
+       - dict: Forecast errors for each horizon (ME, MAE, RMSE).
+       """
     forecast_errors = {i: [] for i in range(1, forecast_horizon + 1)}
+    naive_forecasts = data.shift(1)
+    naive_errors = np.abs(data - naive_forecasts)
 
-    for end_date in pd.date_range(start=pd.Timestamp(start_date), end=pd.Timestamp(end_date), freq='M'):
-        train_data = data[:end_date]
+    for current_end in pd.date_range(start=pd.Timestamp(start_date), end=pd.Timestamp(end_date), freq='M'):
+        train_data = data[:current_end]
         model = ARIMA(train_data, order=order)
         model_fit = model.fit()
 
         forecast = model_fit.forecast(steps=forecast_horizon)
-        actual = data[end_date + pd.offsets.MonthBegin(1):].head(forecast_horizon)
+        actual = data[
+                 current_end + pd.offsets.MonthBegin(1):current_end + pd.offsets.MonthBegin(1) + pd.offsets.MonthEnd(
+                     forecast_horizon)]
 
         for i, (pred, act) in enumerate(zip(forecast, actual), start=1):
-            forecast_errors[i].append(act - pred)
+            error = act - pred
+            forecast_errors[i].append(error)
 
-    # Calculate error metrics
     error_metrics = {}
     for horizon in range(1, forecast_horizon + 1):
         errors = forecast_errors[horizon]
+        actuals = data[len(data) - len(errors):]  # Ensuring the same length and alignment
         me = np.mean(errors)
         mae = np.mean(np.abs(errors))
         rmse = np.sqrt(np.mean(np.square(errors)))
-        error_metrics[horizon] = {'ME': me, 'MAE': mae, 'RMSE': rmse}
+        mape = np.mean(np.abs(np.array(errors) / np.where(np.array(actuals) != 0, np.array(actuals),
+                                                          np.nan))) * 100  # Avoiding division by zero
+        mase = mae / np.mean(naive_errors)
+
+        error_metrics[horizon] = {
+            'ME': me,
+            'MAE': mae,
+            'RMSE': rmse,
+            'MAPE': mape,
+            'MASE': mase
+        }
 
     return error_metrics
 
+
 # Example usage:
-time_series_data = data['Rate']
-start_date = '2017-01-01'
-end_date = '2024-02-01'
-forecast_horizon = 4
+start_date = '2006-12-01'  # End of initial 10-year training period
+end_date = '2024-01-01'  # Allows for validation of the last forecast in February 2024
+forecast_horizon = 6
 order = (2, 1, 5)
 
-errors = recursive_forecast(time_series_data, start_date, end_date, forecast_horizon, order)
+errors = recursive_forecast(train_data['Rate'], start_date, end_date, forecast_horizon, order)
 for horizon, metrics in errors.items():
     print(f"Forecast Horizon {horizon} months:")
-    print(f"ME: {metrics['ME']:.4f}, MAE: {metrics['MAE']:.4f}, RMSE: {metrics['RMSE']:.4f}")
+    print(f"ME: {metrics['ME']:.4f}, MAE: {metrics['MAE']:.4f}, RMSE: {metrics['RMSE']:.4f}"
+
+    # Bai-Perron test for Structural Breakpoints
+    # Convert index to integer for analysis
+    data['Date'] = range(len(data))
+
+    # Detection
+    algo = rpt.Pelt(model="l1").fit(data['Rate'].values)
+    result = algo.predict(pen=10)
+
+    # Display results
+    rpt.display(data['Rate'].values, result)
+    plt.show()
+
+    # Print change points
+    print("Change points detected at indices:", result)
+
+    change_points = [15, 20, 30, 45, 50, 60, 85, 95, 125, 190, 205, 235, 270, 295, 300, 315, 323]
+
+    # Filter out any indices that are out of bounds for the DataFrame's size
+    change_points = [cp for cp in change_points if cp < len(data)]
+
+    # Plot the time series
+    plt.figure(figsize=(14, 7))
+    plt.plot(data.index, data['Rate'], label='Rate')
+
+    # Mark each change point with a vertical line
+    for cp in change_points:
+        plt.axvline(x=data.index[cp], color='r', linestyle='--', label='Change Point' if cp == change_points[0] else "")
+
+    # Adding legend only once for Change Point
+    plt.legend()
+    plt.title('Time Series with Detected Change Points')
+    plt.show()
+
+    # Retrieve the dates corresponding to these indices
+    break_dates = data.index[change_points]
+    print("Dates of detected structural breaks:")
+    print(break_dates)

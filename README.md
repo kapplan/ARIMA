@@ -41,7 +41,6 @@ Forecasts (%):
 - Time Series Decomposition
 - Stationarity Testing
 - Predictive Modeling
-- Visualization
 - Structural Break Analysis
 - Recursive Forecasting
 - Model Evaluation
