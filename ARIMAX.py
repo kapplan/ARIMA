@@ -1,15 +1,26 @@
+# Standard library imports
+import itertools
+
+# Third-party imports for data handling
 import pandas as pd
 import numpy as np
+
+# Third-party imports for plotting and visualization
 import matplotlib.pyplot as plt
-import itertools
+from pandas.plotting import register_matplotlib_converters
+from pylab import rcParams
+
+# Third-party imports for statistical modeling
 import statsmodels.api as sm
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.stattools import adfuller, kpss
 from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from scipy.signal import periodogram
 import ruptures as rpt
+
+# Third-party imports for machine learning metrics
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-from pandas.plotting import register_matplotlib_converters
+from sklearn.model_selection import TimeSeriesSplit
 
 # Import data
 file_path = '/Users/apple/Downloads/prc_hicp_manr__custom_7843973_linear.csv'
@@ -30,7 +41,6 @@ data['Date'] = pd.to_datetime(data['Date'])
 data.set_index('Date', inplace=True)
 data = data.resample('MS').mean()
 
-
 # Stationary Check
 # ADF Test
 def adf_test(series):
@@ -49,7 +59,6 @@ def adf_test(series):
         print('\nReject the null hypothesis. Data has no unit root and is stationary.')
     else:
         print('\nCannot reject the null hypothesis. Data may have a unit root and be non-stationary.')
-
 
 adf_test(data['Rate'])
 
@@ -111,7 +120,6 @@ plt.xlabel('Frequency')
 plt.ylabel('Power')
 plt.title('Frequency vs. Power Periodogram')
 plt.show()
-
 
 # Function to transform and check stationarity
 def transformation(series):
@@ -176,81 +184,39 @@ def transformation(series):
 # Example usage
 transformation(data['Rate'])
 
-# Finding p d q values
-train_data = data[1:len(data) - 12]
-test_data = data[len(data) - 12:]
+# Finding Optimal Parameters using Time Series Split
+tscv = TimeSeriesSplit(n_splits=5)
 
-# Define the range of p, d, and q values for ARIMA parameters
-# Since 'd' is already given as 1 we only define ranges for 'p' and 'q'
 p = range(0, 3)
 q = range(0, 7)
 d = 1
 
-# Generate all possible combinations of p, d, and q (with d fixed at 2)
+# Generate all possible combinations of p, d, and q (with d fixed at 1)
 pdq = list(itertools.product(p, [d], q))
 
-# Initialize variables to store the best parameters and minimum AIC
-best_aic = float('inf')
-best_params = None
+best_aic_tss = float('inf')
+best_params_tss = None
 
-# Loop through all combinations of parameters
 for param in pdq:
     try:
-        mod = sm.tsa.ARIMA(train_data['Rate'],
-                           order=param,
-                           enforce_stationarity=False,
-                           enforce_invertibility=False)
-        results = mod.fit()
+        aic_values = []
+        for train_index, test_index in tscv.split(data):
+            train_data_tss, test_data_tss = data.iloc[train_index], data.iloc[test_index]
+            mod = sm.tsa.ARIMA(train_data_tss['Rate'], order=param, enforce_stationarity=False,
+                               enforce_invertibility=False)
+            results = mod.fit()
+            aic_values.append(results.aic)
 
-        # Check if the current AIC is the best so far
-        if results.aic < best_aic:
-            best_aic = results.aic
-            best_params = param
+        mean_aic = np.mean(aic_values)
+        if mean_aic < best_aic_tss:
+            best_aic_tss = mean_aic
+            best_params_tss = param
 
-        print(f'ARIMA{param} - AIC:{results.aic}')
     except Exception as e:
-        print(f'Error for ARIMA{param}: {str(e)}')
         continue
 
-# Print the best AIC and corresponding parameters
-print(f'Best AIC: {best_aic}')
-print(f'Best Parameters: {best_params}')
-
-# Best BIC
-# Only define ranges for 'p' and 'q' based on ACF and PACF
-p = range(0, 3)
-q = range(0, 7)
-d = 1  # d is already determined to be 1
-
-# Generate all possible combinations of p, d, and q (with d fixed at d=1)
-pdq = list(itertools.product(p, [d], q))
-
-# Initialize variables to store the best parameters and minimum BIC
-best_bic = float('inf')
-best_params = None
-
-# Loop through all combinations of parameters
-for param in pdq:
-    try:
-        mod = sm.tsa.ARIMA(train_data['Rate'],
-                           order=param,
-                           enforce_stationarity=False,
-                           enforce_invertibility=False)
-        results = mod.fit()
-
-        # Check if the current BIC is the best so far
-        if results.bic < best_bic:
-            best_bic = results.bic
-            best_params = param
-
-        print(f'ARIMA{param} - BIC:{results.bic}')
-    except Exception as e:
-        print(f'Error for ARIMA{param}: {str(e)}')
-        continue
-
-# Print the best BIC and corresponding parameters
-print(f'Best BIC: {best_bic}')
-print(f'Best Parameters: {best_params}')
+print(f'Best AIC (TimeSeriesSplit): {best_aic_tss}')
+print(f'Best Parameters (TimeSeriesSplit): {best_params_tss}')
 
 # Bai-Perron test for Structural Breakpoints
 # Convert index to integer for analysis
@@ -311,7 +277,7 @@ print(data.head())
 exog = data[[f'break_{i + 1}' for i in range(len(break_dates))]]
 
 # Fit the ARIMAX model
-model_arimax = sm.tsa.ARIMA(data['Rate'], order=(2, 1, 5), exog=exog)
+model_arimax = sm.tsa.ARIMA(data['Rate'], order=best_params_tss, exog=exog)
 results_arimax = model_arimax.fit()
 print(results_arimax.summary())
 
@@ -351,85 +317,85 @@ print(f'RMSE: {rmse_arimax}')
 print(f'MAPE: {mape_arimax}')
 print(f'R2: {r2_arimax}')
 
+# Time Series Split
+tscv = TimeSeriesSplit(n_splits=5)
 
-# Recursive ARIMAX with Performance Metrics
-def recursive_forecast_arimax(data, start_date, forecast_steps, order, break_dates):
-    forecasts = []
-    forecast_indices = []
-    exog_cols = [f'break_{i + 1}' for i in range(len(break_dates))]
+# Initialize variables to store the best parameters and minimum AIC
+best_aic = float('inf')
+best_params = None
 
-    performance_metrics = {
-        'MSE': [],
-        'MAE': [],
-        'RMSE': [],
-        'MAPE': [],
-        'R2': []
-    }
+# Define the range of p, d, and q values for ARIMA parameters
+p = range(0, 3)
+q = range(0, 7)
+d = 1
+pdq = list(itertools.product(p, [d], q))
 
-    for i in range(forecast_steps):
-        model = sm.tsa.ARIMA(data['Rate'], order=order, exog=data[exog_cols])
-        results = model.fit()
+# Loop through all combinations of parameters
+for param in pdq:
+    try:
+        aic_values = []
+        for train_index, test_index in tscv.split(data):
+            train_data, test_data = data.iloc[train_index], data.iloc[test_index]
+            mod = sm.tsa.ARIMA(train_data['Rate'], order=param, enforce_stationarity=False, enforce_invertibility=False)
+            results = mod.fit()
+            aic_values.append(results.aic)
 
-        forecast = results.get_forecast(steps=1, exog=np.tile([1] * len(break_dates), (1, 1)))
-        forecast_mean = forecast.predicted_mean.iloc[0]
+        mean_aic = np.mean(aic_values)
+        if mean_aic < best_aic:
+            best_aic = mean_aic
+            best_params = param
 
-        forecast_date = data.index[-1] + pd.DateOffset(months=1)
-        forecasts.append(forecast_mean)
-        forecast_indices.append(forecast_date)
+    except Exception as e:
+        continue
 
-        # Update the dataset with the forecast
-        new_row = pd.Series([forecast_mean] + [1] * len(break_dates), index=['Rate'] + exog_cols, name=forecast_date)
-        data = data.append(new_row)
+print(f'Best AIC: {best_aic}')
+print(f'Best Parameters: {best_params}')
 
-        # Calculate and store performance metrics
-        actual_values = data['Rate'][-(i + 2): -1]
-        predicted_values = pd.Series(forecasts[-(i + 1):], index=actual_values.index)
-        residuals = actual_values - predicted_values
+data['index'] = range(len(data))
+algo = rpt.Pelt(model="l1").fit(data['Rate'].values)
+result = algo.predict(pen=10)
 
-        mse = mean_squared_error(actual_values, predicted_values)
-        mae = mean_absolute_error(actual_values, predicted_values)
-        rmse = np.sqrt(mse)
-        mape = np.mean(np.abs(residuals / actual_values)) * 100
-        r2 = r2_score(actual_values, predicted_values)
+rpt.display(data['Rate'].values, result)
+plt.show()
 
-        performance_metrics['MSE'].append(mse)
-        performance_metrics['MAE'].append(mae)
-        performance_metrics['RMSE'].append(rmse)
-        performance_metrics['MAPE'].append(mape)
-        performance_metrics['R2'].append(r2)
+change_points = [cp for cp in result if cp < len(data)]
+break_dates = data.index[change_points]
+print("Dates of detected structural breaks:", break_dates)
 
-    forecast_series = pd.Series(forecasts, index=forecast_indices)
-    return forecast_series, performance_metrics
+for i, break_date in enumerate(break_dates):
+    data[f'break_{i + 1}'] = (data.index >= break_date).astype(int)
+exog = data[[f'break_{i + 1}' for i in range(len(break_dates))]]
 
+model_arimax = sm.tsa.ARIMA(data['Rate'], order=best_params, exog=exog)
+results_arimax = model_arimax.fit()
+print(results_arimax.summary())
 
-# Define start date for forecasting
-start_date = '2023-12-01'  # Example start date, replace with your actual start date
+forecast_steps = 6
+exog_forecast = np.tile([1] * len(break_dates), (forecast_steps, 1))
+forecast_arimax = results_arimax.get_forecast(steps=forecast_steps, exog=exog_forecast)
+forecast_arimax_values = forecast_arimax.predicted_mean
+print("ARIMAX Forecasted Values:")
+print(forecast_arimax_values)
 
-# Number of steps to forecast
-forecast_steps = 6  # Example forecast steps
-order = (2, 1, 5)
-
-# Apply recursive forecasting
-forecast_series_arimax, performance_metrics_arimax = recursive_forecast_arimax(data.copy(), start_date, forecast_steps,
-                                                                               order, break_dates)
-
-# Print the forecasted values
-print("Recursive ARIMAX Forecasted Values:")
-print(forecast_series_arimax)
-
-# Plot the recursive forecast
 plt.figure(figsize=(12, 6))
 plt.plot(data.index, data['Rate'], label='Observed')
-plt.plot(forecast_series_arimax.index, forecast_series_arimax, label='Recursive ARIMAX Forecast')
+plt.plot(forecast_arimax_values.index, forecast_arimax_values, label='ARIMAX Forecast')
+plt.fill_between(forecast_arimax.conf_int().index, forecast_arimax.conf_int().iloc[:, 0],
+                 forecast_arimax.conf_int().iloc[:, 1], color='k', alpha=.15)
 plt.legend()
 plt.show()
 
-# Print performance metrics for each month into the future
-print("Performance Metrics for Recursive ARIMAX:")
-for i in range(forecast_steps):
-    print(f"Month {i + 1}:")
-    print(f"  MSE: {performance_metrics_arimax['MSE'][i]}")
-    print(f"  MAE: {performance_metrics_arimax['MAE'][i]}")
-    print(f"  RMSE: {performance_metrics_arimax['RMSE'][i]}")
-    print(f"  MAPE: {performance_metrics_arimax['MAPE'][i]}")
-    print(f"  R2: {performance_metrics_arimax['R2'][i]}")
+residuals_arimax = results_arimax.resid
+
+mse_arimax = mean_squared_error(data['Rate'], results_arimax.fittedvalues)
+mae_arimax = mean_absolute_error(data['Rate'], results_arimax.fittedvalues)
+rmse_arimax = np.sqrt(mse_arimax)
+mape_arimax = np.mean(np.abs(residuals_arimax / data['Rate'])) * 100
+r2_arimax = r2_score(data['Rate'], results_arimax.fittedvalues)
+
+print(f'ARIMAX Performance Metrics:')
+print(f'MSE: {mse_arimax}')
+print(f'MAE: {mae_arimax}')
+print(f'RMSE: {rmse_arimax}')
+print(f'MAPE: {mape_arimax}')
+print(f'R2: {r2_arimax}')

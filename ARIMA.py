@@ -1,6 +1,7 @@
 # Standard library imports
 import itertools
 import warnings
+from datetime import datetime
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
@@ -8,7 +9,6 @@ warnings.filterwarnings('ignore')
 # Third-party imports for data handling
 import numpy as np
 import pandas as pd
-from datetime import datetime
 
 # Third-party imports for statistical modeling
 import statsmodels.api as sm
@@ -29,7 +29,7 @@ from sklearn.metrics import (
     confusion_matrix,
     median_absolute_error,
 )
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, TimeSeriesSplit
 
 # Third-party imports for plotting and visualization
 import matplotlib as mpl
@@ -301,11 +301,10 @@ def transformation(series):
 
     return diff_series
 
-
 # Example usage
 transformation(data['Rate'])
 
-# Finding p d q values
+# Train Test Split for finding the Optimal Paramaters
 train_data = data[1:len(data) - 12]
 test_data = data[len(data) - 12:]
 
@@ -320,7 +319,7 @@ pdq = list(itertools.product(p, [d], q))
 
 # Initialize variables to store the best parameters and minimum AIC
 best_aic = float('inf')
-best_params = None
+best_aic_params = None
 
 # Loop through all combinations of parameters
 for param in pdq:
@@ -334,7 +333,7 @@ for param in pdq:
         # Check if the current AIC is the best so far
         if results.aic < best_aic:
             best_aic = results.aic
-            best_params = param
+            best_aic_params = param
 
         print(f'ARIMA{param} - AIC:{results.aic}')
     except Exception as e:
@@ -343,7 +342,7 @@ for param in pdq:
 
 # Print the best AIC and corresponding parameters
 print(f'Best AIC: {best_aic}')
-print(f'Best Parameters: {best_params}')
+print(f'Best AIC Parameters: {best_aic_params}')
 
 # Best BIC
 # Only define ranges for 'p' and 'q' based on ACF and PACF
@@ -356,7 +355,7 @@ pdq = list(itertools.product(p, [d], q))
 
 # Initialize variables to store the best parameters and minimum BIC
 best_bic = float('inf')
-best_params = None
+best_bic_params = None
 
 # Loop through all combinations of parameters
 for param in pdq:
@@ -370,7 +369,7 @@ for param in pdq:
         # Check if the current BIC is the best so far
         if results.bic < best_bic:
             best_bic = results.bic
-            best_params = param
+            best_bic_params = param
 
         print(f'ARIMA{param} - BIC:{results.bic}')
     except Exception as e:
@@ -379,31 +378,112 @@ for param in pdq:
 
 # Print the best BIC and corresponding parameters
 print(f'Best BIC: {best_bic}')
-print(f'Best Parameters: {best_params}')
+print(f'Best BIC Parameters: {best_bic_params}')
+
+# Finding Optimal Parameters using Time Series Split
+tscv = TimeSeriesSplit(n_splits=5)
+
+best_aic_tss = float('inf')
+best_params_tss = None
+
+for param in pdq:
+    try:
+        aic_values = []
+        for train_index, test_index in tscv.split(data):
+            train_data_tss, test_data_tss = data.iloc[train_index], data.iloc[test_index]
+            mod = sm.tsa.ARIMA(train_data_tss['Rate'], order=param, enforce_stationarity=False,
+                               enforce_invertibility=False)
+            results = mod.fit()
+            aic_values.append(results.aic)
+
+        mean_aic = np.mean(aic_values)
+        if mean_aic < best_aic_tss:
+            best_aic_tss = mean_aic
+            best_params_tss = param
+
+    except Exception as e:
+        continue
+
+print(f'Best AIC (TimeSeriesSplit): {best_aic_tss}')
+print(f'Best Parameters (TimeSeriesSplit): {best_params_tss}')
 
 # In[124]:
-# ARIMA
-model = ARIMA(data['Rate'], order=(2, 1, 5))
-model_fit = model.fit()
-print(model_fit.summary())
+# AIC with train-test split and AIC of Time Series Split returns the same parameters,
+# therefore I will test the model performance of the best BIC parameters and best AIC parameters
 
-# Forecasting for 5 months into the future
-prediction = model_fit.forecast(steps=6)
+# Fit ARIMA model with the best parameters found using Train-Test Split (BIC parameters)
+model_train_test_split = ARIMA(data['Rate'], order=best_bic_params)
+model_fit_train_test_split = model_train_test_split.fit()
+
+# Fit ARIMA model with the best parameters found using TimeSeriesSplit (AIC parameters)
+model_time_series_split = ARIMA(data['Rate'], order=best_params_tss)
+model_fit_time_series_split = model_time_series_split.fit()
+
+# Forecast for 6 months into the future using both models
+forecast_steps = 6
+
+# Forecast using TimeSeriesSplit model
+forecast_time_series_split = model_fit_time_series_split.get_forecast(steps=forecast_steps)
+forecast_time_series_split_values = forecast_time_series_split.predicted_mean
+forecast_time_series_split_ci = forecast_time_series_split.conf_int()
+
+# Plot the forecast
+plt.figure(figsize=(12, 6))
+plt.plot(data.index, data['Rate'], label='Observed')
+plt.plot(forecast_time_series_split_values.index, forecast_time_series_split_values, label='Forecast (TimeSeriesSplit)')
+plt.fill_between(forecast_time_series_split_ci.index,
+                 forecast_time_series_split_ci.iloc[:, 0],
+                 forecast_time_series_split_ci.iloc[:, 1], color='green', alpha=0.2)
+plt.legend()
+plt.title('Forecast: TimeSeriesSplit')
+plt.show()
+
+
+# Function to print and format the model summary and performance metrics
+def print_model_performance(model_fit, model_name):
+    print(f"Model Performance: {model_name}")
+    print("=" * 80)
+    print(model_fit.summary())
+    print("\nPerformance Metrics:")
+    residuals = data['Rate'] - model_fit.fittedvalues
+    mse = mean_squared_error(data['Rate'], model_fit.fittedvalues)
+    mae = mean_absolute_error(data['Rate'], model_fit.fittedvalues)
+    rmse = np.sqrt(mse)
+    r2 = r2_score(data['Rate'], model_fit.fittedvalues)
+
+    print(f"MSE: {mse:.4f}")
+    print(f"MAE: {mae:.4f}")
+    print(f"RMSE: {rmse:.4f}")
+    print(f"R^2: {r2:.4f}")
+    print("=" * 80)
+
+
+# Print the performance for the Train-Test Split model
+print_model_performance(model_fit_train_test_split, "Train-Test Split Model")
+
+# Print the performance for the TimeSeriesSplit model
+print_model_performance(model_fit_time_series_split, "TimeSeriesSplit Model")
+
+# Forecasting for 6 months into the future
+forecast_steps = 6
+prediction_tss = model_fit_time_series_split.forecast(steps=forecast_steps)
 for month in range(3, 8):
     year = 2024
-    predicted_inflation = prediction[(prediction.index.year == year) & (prediction.index.month == month)].values[0]
+    predicted_inflation_tss = \
+        prediction_tss[(prediction_tss.index.year == year) & (prediction_tss.index.month == month)].values[0]
     print(
-        f"Poland's predicted inflation rate for {pd.Timestamp(year, month, 1).strftime('%B %Y')} is: {predicted_inflation}%")
+        f"Poland's predicted inflation rate for {pd.Timestamp(year, month, 1).strftime('%B %Y')} is: {predicted_inflation_tss}%")
 
 # Generate predictions and confidence intervals
-pred = model_fit.get_prediction(start=pd.to_datetime('2018-01-01'), dynamic=False)
-pred_ci = pred.conf_int()
+pred_tss = model_fit_time_series_split.get_prediction(start=pd.to_datetime('2018-01-01'), dynamic=False)
+pred_ci_tss = pred_tss.conf_int()
 
 # Plot the actual data and predictions
 fig, ax = plt.subplots()
 data.loc['2018':].plot(ax=ax)  # Actual data
-pred.predicted_mean.plot(ax=ax, style='r--')  # Predicted mean
-ax.fill_between(pred_ci.index, pred_ci.iloc[:, 0], pred_ci.iloc[:, 1], color='pink', alpha=0.3)  # Confidence interval
+pred_tss.predicted_mean.plot(ax=ax, style='r--')  # Predicted mean
+ax.fill_between(pred_ci_tss.index, pred_ci_tss.iloc[:, 0], pred_ci_tss.iloc[:, 1], color='pink',
+                alpha=0.3)  # Confidence interval
 ax.set_title('Inflation Rates in Poland: Actual vs Predicted')
 ax.legend(['Actual', 'Predicted'])
 plt.show()
@@ -411,43 +491,43 @@ plt.show()
 # Plot the actual data, fitted values, and predictions
 fig, ax = plt.subplots(figsize=(14, 7))
 data['Rate'].plot(ax=ax, label='Actual')
-model_fit.fittedvalues.plot(ax=ax, color='red', label='Fitted')
+model_fit_time_series_split.fittedvalues.plot(ax=ax, color='red', label='Fitted')
 
 # Predictions
-plot_predict(model_fit, start='2020', end='2025', ax=ax, plot_insample=False)
+plot_predict(model_fit_time_series_split, start='2020', end='2025', ax=ax, plot_insample=False)
 ax.set_title('Inflation Rates in Poland: Actual vs Fitted vs Predicted')
 ax.legend(loc='best')
 plt.show()
 
 # Calculate Residuals
-residuals = data['Rate'] - results.fittedvalues
+residuals_tss = data['Rate'] - model_fit_time_series_split.fittedvalues
 
-# Plot residuals
+# Plot residuals from TimeSeriesSplit model
 plt.figure(figsize=(14, 7))
-plt.plot(residuals.index, residuals, label='Residuals')
+plt.plot(residuals_tss.index, residuals_tss, label='Residuals')
 plt.title('Residuals of the ARIMA Model')
 plt.legend(loc='best')
 plt.show()
-print(residuals.describe())
+print(residuals_tss.describe())
 
-# Density of Residuals
+# Density of Residuals from TimeSeriesSplit model
 fig, ax = plt.subplots(figsize=(14, 7))
-residuals.plot(kind='kde', ax=ax, title="Density of Residual Errors")
+residuals_tss.plot(kind='kde', ax=ax, title="Density of Residual Errors ")
 plt.show()
 
-# Find the date of the maximum residuals
-residuals = data['Rate'] - results.fittedvalues
-max_residual_date = residuals.nlargest(1).idxmin()
-print(f"The date of the maximum residual is: {max_residual_date}")
+# Find the date of the maximum residual from TimeSeriesSplit model
+max_residual_date_tss = residuals_tss.nlargest(1).idxmin()
+print(f"The date of the maximum residual is: {max_residual_date_tss}")
 
-# Find the date of the second maximum residual
-second_max_residual_date = residuals.nlargest(2).idxmin()
-print(f"The date of the second maximum residual is: {second_max_residual_date}")  # 2022-03-01
+# Find the date of the second maximum residual from TimeSeriesSplit model
+second_max_residual_date_tss = residuals_tss.nlargest(2).idxmin()
+print(f"The date of the second maximum residual is: {second_max_residual_date_tss}")
 
-# Recursive Forecast
-def recursive_forecast(data, start_date, end_date, forecast_horizon, order):
+
+# Recursive Forecast using TimeSeriesSplit model
+def recursive_forecast_tss(data, start_date, end_date, forecast_horizon, order):
     """
-       Performs recursive forecasting and calculates forecast errors.
+       Performs recursive forecasting and calculates forecast errors using TimeSeriesSplit model.
 
        Parameters:
        - data: pd.Series, time series data with datetime index.
@@ -476,6 +556,9 @@ def recursive_forecast(data, start_date, end_date, forecast_horizon, order):
         for i, (pred, act) in enumerate(zip(forecast, actual), start=1):
             error = act - pred
             forecast_errors[i].append(error)
+    # Print model summary
+    print(f"Model summary for training data ending {current_end}:")
+    print(model_fit.summary())
 
     error_metrics = {}
     for horizon in range(1, forecast_horizon + 1):
@@ -498,51 +581,14 @@ def recursive_forecast(data, start_date, end_date, forecast_horizon, order):
 
     return error_metrics
 
-# Example usage:
+
+# Example usage for recursive forecast using TimeSeriesSplit model:
 start_date = '2006-12-01'  # End of initial 10-year training period
 end_date = '2024-01-01'  # Allows for validation of the last forecast in February 2024
 forecast_horizon = 6
-order = (2, 1, 5)
+order_tss = best_params_tss
 
-errors = recursive_forecast(train_data['Rate'], start_date, end_date, forecast_horizon, order)
-for horizon, metrics in errors.items():
+errors_tss = recursive_forecast_tss(train_data['Rate'], start_date, end_date, forecast_horizon, order_tss)
+for horizon, metrics in errors_tss.items():
     print(f"Forecast Horizon {horizon} months:")
     print(f"ME: {metrics['ME']:.4f}, MAE: {metrics['MAE']:.4f}, RMSE: {metrics['RMSE']:.4f}")
-
-# Bai-Perron test for Structural Breakpoints
-# Convert index to integer for analysis
-data['Date'] = range(len(data))
-
-# Detection
-algo = rpt.Pelt(model="l1").fit(data['Rate'].values)
-result = algo.predict(pen=10)
-
-# Display results
-rpt.display(data['Rate'].values, result)
-plt.show()
-
-# Print change points
-print("Change points detected at indices:", result)
-
-change_points = [15, 20, 30, 45, 50, 60, 85, 95, 125, 190, 205, 235, 270, 295, 300, 315, 323]
-
-# Filter out any indices that are out of bounds for the DataFrame's size
-change_points = [cp for cp in change_points if cp < len(data)]
-
-# Plot the time series
-plt.figure(figsize=(14, 7))
-plt.plot(data.index, data['Rate'], label='Rate')
-
-# Mark each change point with a vertical line
-for cp in change_points:
-    plt.axvline(x=data.index[cp], color='r', linestyle='--', label='Change Point' if cp == change_points[0] else "")
-
-# Adding legend only once for Change Point
-plt.legend()
-plt.title('Time Series with Detected Change Points')
-plt.show()
-
-# Retrieve the dates corresponding to these indices
-break_dates = data.index[change_points]
-print("Dates of detected structural breaks:")
-print(break_dates)
