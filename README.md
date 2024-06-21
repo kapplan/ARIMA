@@ -22,6 +22,7 @@ Forecasts (%):
 | July 2024  | 2.78%          |
 | August 2024| 2.73%          |
 
+![Forecast](visualisations/actual_vs_fitted_vs_predicted.jpg)
 
 
 - The periodogram indicated a seasonal component at a frequency of 0.0003, corresponding to a peak
