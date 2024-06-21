@@ -466,7 +466,7 @@ plt.show()
 # Forecasting for 6 months into the future
 forecast_steps = 6
 prediction_tss = model_fit_time_series_split.forecast(steps=forecast_steps)
-for month in range(3, 8):
+for month in range(3, 9):
     year = 2024
     predicted_inflation_tss = \
         prediction_tss[(prediction_tss.index.year == year) & (prediction_tss.index.month == month)].values[0]
