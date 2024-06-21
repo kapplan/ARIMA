@@ -427,18 +427,6 @@ forecast_time_series_split = model_fit_time_series_split.get_forecast(steps=fore
 forecast_time_series_split_values = forecast_time_series_split.predicted_mean
 forecast_time_series_split_ci = forecast_time_series_split.conf_int()
 
-# Plot the forecast
-plt.figure(figsize=(12, 6))
-plt.plot(data.index, data['Rate'], label='Observed')
-plt.plot(forecast_time_series_split_values.index, forecast_time_series_split_values, label='Forecast (TimeSeriesSplit)')
-plt.fill_between(forecast_time_series_split_ci.index,
-                 forecast_time_series_split_ci.iloc[:, 0],
-                 forecast_time_series_split_ci.iloc[:, 1], color='green', alpha=0.2)
-plt.legend()
-plt.title('Forecast: TimeSeriesSplit')
-plt.show()
-
-
 # Function to print and format the model summary and performance metrics
 def print_model_performance(model_fit, model_name):
     print(f"Model Performance: {model_name}")
@@ -463,6 +451,17 @@ print_model_performance(model_fit_train_test_split, "Train-Test Split Model")
 
 # Print the performance for the TimeSeriesSplit model
 print_model_performance(model_fit_time_series_split, "TimeSeriesSplit Model")
+
+# Plot the forecast
+plt.figure(figsize=(12, 6))
+plt.plot(data.index, data['Rate'], label='Observed')
+plt.plot(forecast_time_series_split_values.index, forecast_time_series_split_values, label='Forecast (TimeSeriesSplit)')
+plt.fill_between(forecast_time_series_split_ci.index,
+                 forecast_time_series_split_ci.iloc[:, 0],
+                 forecast_time_series_split_ci.iloc[:, 1], color='green', alpha=0.2)
+plt.legend()
+plt.title('Forecast: TimeSeriesSplit')
+plt.show()
 
 # Forecasting for 6 months into the future
 forecast_steps = 6
@@ -523,7 +522,6 @@ print(f"The date of the maximum residual is: {max_residual_date_tss}")
 second_max_residual_date_tss = residuals_tss.nlargest(2).idxmin()
 print(f"The date of the second maximum residual is: {second_max_residual_date_tss}")
 
-
 # Recursive Forecast using TimeSeriesSplit model
 def recursive_forecast_tss(data, start_date, end_date, forecast_horizon, order):
     """
@@ -582,13 +580,15 @@ def recursive_forecast_tss(data, start_date, end_date, forecast_horizon, order):
     return error_metrics
 
 
-# Example usage for recursive forecast using TimeSeriesSplit model:
+# Example usage for recursive forecast:
 start_date = '2006-12-01'  # End of initial 10-year training period
 end_date = '2024-01-01'  # Allows for validation of the last forecast in February 2024
+
 forecast_horizon = 6
 order_tss = best_params_tss
 
 errors_tss = recursive_forecast_tss(train_data['Rate'], start_date, end_date, forecast_horizon, order_tss)
 for horizon, metrics in errors_tss.items():
     print(f"Forecast Horizon {horizon} months:")
-    print(f"ME: {metrics['ME']:.4f}, MAE: {metrics['MAE']:.4f}, RMSE: {metrics['RMSE']:.4f}")
+    print(
+        f"ME: {metrics['ME']:.4f}, MAE: {metrics['MAE']:.4f}, RMSE: {metrics['RMSE']:.4f}, MAPE:{metrics['MAPE']:.4F}")
