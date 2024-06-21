@@ -7,7 +7,7 @@ forecasting, alongside a comprehensive analysis of stationarity and structural b
 ## Detailed Analysis and Project Walkthrough
 
 For a comprehensive walkthrough of the entire project process, please visit my Medium page:
-[Time Traveling with Data: Forecasting Inflation for 2024](https://medium.com/@kapplan)
+[Time Traveling with Data: Forecasting Inflation for 2024](https://basakaplan.medium.com/time-traveling-with-data-forecasting-polish-inflation-for-2024-edbcd8983a36)
 
 ## Findings
 
