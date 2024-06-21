@@ -6,10 +6,8 @@ forecasting, alongside a comprehensive analysis of stationarity and structural b
 
 ## Detailed Analysis and Project Walkthrough
 
-For a comprehensive walkthrough of the entire project process, including in-depth analyses and step-by-step
-explanations, please visit my Medium page. You can find detailed articles and discussions about the methodologies,
-results, and insights gained during this project:
-[Time Traveling with Data: Forecasting Inflation for 2024](https://medium.com/@kapplan)
+For a comprehensive walkthrough of the entire project process, please visit my Medium page:
+[Time Traveling with Data: Forecasting Inflation for 2024](https://basakaplan.medium.com/time-traveling-with-data-forecasting-polish-inflation-for-2024-edbcd8983a36)
 
 ## Findings
 
@@ -17,24 +15,29 @@ Forecasts (%):
 
 | Month      | Inflation Rate |
 |------------|----------------|
-| March 2024 | 3.29%          |
-| April 2024 | 2.98%          |
-| May 2024   | 2.54%          |
-| June 2024  | 2.17%          |
-| July 2024  | 1.89%          |
+| March 2024 | 3.07%          |
+| April 2024 | 2.66%          |
+| May 2024   | 3.04%          |
+| June 2024  | 3.22%          |
+| July 2024  | 2.78%          |
+| August 2024| 2.73%          |
+
+![Forecast](visualisations/actual_vs_fitted_vs_predicted.jpg)
+
 
 - The periodogram indicated a seasonal component at a frequency of 0.0003, corresponding to a peak
   power of 31741.7432, **signaling seasonal patterns.**
 - After the first differencing, the stationarity of the time series was confirmed with both the Augmented
   Dickey-Fuller (ADF) and the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests.
+- **The model was fitted with ARIMA(2, 1, 6) parameters, chosen based on the lowest AIC score, which suggested a reasonably well fit.**
+- Forecasting for the next 6 months of 2024, the model predicts inflation rates ranging from 3.07% in March to 2.73%
+  in August, highlighting a **decreasing trend in inflation.**
+- Mean residual of **0.037871** suggests a **slight overestimation bias.**
+- Model forecast errors show that the accuracy drops the more we try to predict ahead.
+- However, the model appears to fit the data reasonably well, capturing key trends and seasonal patterns in Poland's inflation rates.
 - Structural breaks were identified in the time series, which may correspond to significant external events such as
   COVID-19 pandemic, Russian invasion of Ukraine, Poland's new government after general elections of 2023, affecting
   inflation rates.
-- **The model was fitted with ARIMA(2, 1, 5) parameters, chosen based on the lowest AIC and BIC values, which
-  suggested a moderate fit.**
-- Forecasting for the next 5 months of 2024, the model predicts inflation rates ranging from 3.29% in March to 1.89%
-  in July, highlighting a **decreasing trend in inflation.**
-- Mean residual of **0.0512** suggests a **slight overestimation bias.**
 
 ### Key Features
 
